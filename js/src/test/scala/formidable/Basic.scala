@@ -37,5 +37,21 @@ object BasicTests extends TestSuite {
         )(Thingy.apply)(Thingy.unapply)
       )(NestIt.apply)(NestIt.unapply))
     }
+    'again {
+      import FormidableThisTimeBetter._
+      case class Thingz(foo: String, renamed: String)
+      val foo = Thingz("YOLOYOLO","BITNNHZ")
+
+      class ThingyLayout {
+        val foo = scalatags.JsDom.tags.input(`type`:="text").render
+        val renamed = scalatags.JsDom.tags.input(`type`:="text").render
+      }
+
+      val zzz = new ThingyLayout
+      val wat: Formidable[Thingz] = MacroTest.fwat[ThingyLayout,Thingz](zzz)
+      wat.populate(foo)
+      println(zzz.foo.value)
+      println(zzz.renamed.value)
+    }
   }
 }
