@@ -20,13 +20,26 @@ object todo {
     def bind(inp: HTMLInputElement, value: String): Unit = { inp.value = value }
     def unbind(inp: HTMLInputElement): String = { inp.value }
   }
+
+  class LayoutBinder[L,T] extends Binder[L with FormidableThisTimeBetter.Formidable[T],T]{
+    def bind(inp: L with FormidableThisTimeBetter.Formidable[T], value: T) = {
+      inp.populate(value)
+    }
+    def unbind(inp: L with FormidableThisTimeBetter.Formidable[T]): T = {
+      inp.construct()
+    }
+  }
+
+  implicit def ImplicitLayoutBinder[L,T]: Binder[L with FormidableThisTimeBetter.Formidable[T],T] = new LayoutBinder()
 }
 
 object BasicTests extends TestSuite {
 
   case class Thing(foo: String, bar: String, baz: String)
-  case class Basic1(inp: String)
 
+  case class Inner(a: String, b: String)
+
+  case class Outer(foo: String, inner: Inner)
 
   def tests = TestSuite {
     'object3 {
@@ -52,6 +65,22 @@ object BasicTests extends TestSuite {
       assert(meh.bar == "BB")
       assert(meh.baz == "CCC")
       println(meh)
+    }
+    'nested {
+      import FormidableThisTimeBetter._
+      import formidable.todo._
+
+      trait InnerLayout {
+        val a = scalatags.JsDom.tags.input(`type`:="text").render
+        val b = scalatags.JsDom.tags.input(`type`:="text").render
+      }
+      trait OuterLayout {
+        val foo = scalatags.JsDom.tags.input(`type`:="text").render
+        val inner = MacroTest.v2[InnerLayout,Inner]
+      }
+      val test = MacroTest.v2[OuterLayout,Outer]
+      test.populate(Outer("LOL",Inner("QQQ","ZZZ")))
+      println(test.inner.b.value)
     }
   }
 }

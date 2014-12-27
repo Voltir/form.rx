@@ -8,6 +8,7 @@ import scala.annotation.{ClassfileAnnotation, StaticAnnotation}
 object MacroTest {
   def paramsOf[T](): List[String] = macro Macros.paramsOf[T]
   def fwat[Layout,Target](layout: Layout): formidable.FormidableThisTimeBetter.Formidable[Target] = macro Macros.mkFormidable[Layout,Target]
+  def v2[Layout,Target]: Layout with formidable.FormidableThisTimeBetter.Formidable[Target] = macro Macros.mk2[Layout,Target]
 }
 
 object Macros {
@@ -17,6 +18,67 @@ object Macros {
     val symTab = c.universe.asInstanceOf[reflect.internal.SymbolTable]
     val pre = tpe.asInstanceOf[symTab.Type].prefix.asInstanceOf[Type]
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
+  }
+
+  def mk2[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with formidable.FormidableThisTimeBetter.Formidable[Target]] = {
+    import c.universe._
+
+    val targetTpe = weakTypeTag[Target].tpe
+    val layoutTpe = weakTypeTag[Layout].tpe
+
+    val fields = targetTpe.decls.collectFirst {
+      case m: MethodSymbol if m.isPrimaryConstructor => m
+    }.get.paramLists.head
+
+    val layoutAccessors = layoutTpe.decls.map(_.asTerm).filter(_.isAccessor).toList
+    val layoutNames = layoutAccessors.map(_.name.toString).toSet
+    val targetNames = fields.map(_.name.toString).toSet
+    val missing = targetNames.diff(layoutNames)
+    if(missing.size > 0) {
+      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n${missing.mkString("\n")}")
+    }
+
+    val companion = getCompanion(c)(targetTpe)
+
+    val magic = fields.zipWithIndex.map { case (field,idx) =>
+      val term = TermName(s"a$idx")
+      val accessor = layoutAccessors.find(_.name == field.name).get
+      q"""
+        implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term)
+      """
+    }
+
+    val unmagic = fields.map { case field =>
+      val accessor = layoutAccessors.find(_.name == field.name).get
+      q"""
+        implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor)
+      """
+    }
+
+    val bnd2 = q"$companion.unapply(inp).map { case (a0,a1) => $magic }"
+    val bnd3 = q"$companion.unapply(inp).map { case (a0,a1,a2) => $magic }"
+    val bnd4 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3) => $magic }"
+    val bnd5 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3,a4) => $magic }"
+    val bnd6 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3,a4,a5) => $magic }"
+
+    c.Expr[Layout with formidable.FormidableThisTimeBetter.Formidable[Target]](q"""
+      new $layoutTpe with Formidable[$targetTpe] {
+        def populate(inp: $targetTpe): Unit = {
+          ${ fields.size match {
+            case 2 => bnd2
+            case 3 => bnd3
+            case 4 => bnd4
+            case 5 => bnd5
+            case 6 => bnd6
+            case _ => c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
+          }}
+        }
+
+        def construct(): $targetTpe = {
+          $companion.apply(..$unmagic)
+        }
+      }
+    """)
   }
 
   def mkFormidable[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context)(layout: c.Expr[Layout])
