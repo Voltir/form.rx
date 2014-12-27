@@ -34,7 +34,6 @@ object Macros {
     val layoutNames = layoutAccessors.map(_.name.toString).toSet
     val targetNames = fields.map(_.name.toString).toSet
     val missing = targetNames.diff(layoutNames)
-
     if(missing.size > 0) {
       c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n${missing.mkString("\n")}")
     }
@@ -43,11 +42,17 @@ object Macros {
 
     val magic = fields.zipWithIndex.map { case (field,idx) =>
       val term = TermName(s"a$idx")
-      q"$layout.${layoutAccessors.find(_.name == field.name).get}.value = $term"
+      val accessor = layoutAccessors.find(_.name == field.name).get
+      q"""
+        implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].bind($layout.$accessor,$term)
+      """
     }
 
     val unmagic = fields.map { case field =>
-     q"$layout.${layoutAccessors.find(_.name == field.name).get}.value"
+      val accessor = layoutAccessors.find(_.name == field.name).get
+      q"""
+        implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].unbind($layout.$accessor)
+      """
     }
 
     val bnd2 = q"$companion.unapply(inp).map { case (a0,a1) => $magic }"
@@ -57,22 +62,22 @@ object Macros {
     val bnd6 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3,a4,a5) => $magic }"
 
     c.Expr[formidable.FormidableThisTimeBetter.Formidable[Target]](q"""
-    new Formidable[$targetTpe] {
-      def populate(inp: $targetTpe): Unit = {
-        ${ fields.size match {
-          case 2 => bnd2
-          case 3 => bnd3
-          case 4 => bnd4
-          case 5 => bnd5
-          case 6 => bnd6
-          case _ => c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
-        }}
-      }
+      new Formidable[$targetTpe] {
+        def populate(inp: $targetTpe): Unit = {
+          ${ fields.size match {
+            case 2 => bnd2
+            case 3 => bnd3
+            case 4 => bnd4
+            case 5 => bnd5
+            case 6 => bnd6
+            case _ => c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
+          }}
+        }
 
-      def construct(): $targetTpe = {
-        $companion.apply(..$unmagic)
+        def construct(): $targetTpe = {
+          $companion.apply(..$unmagic)
+        }
       }
-    }
     """)
   }
 

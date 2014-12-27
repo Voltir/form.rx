@@ -8,29 +8,49 @@ import formidable.validators.any._
 import org.scalajs.dom
 
 
+object todo {
+  import org.scalajs.dom.HTMLInputElement
+
+  trait Binder[I,O] {
+    def bind(inp: I, value: O): Unit
+    def unbind(inp: I): O
+  }
+
+  implicit object InputBinder extends Binder[HTMLInputElement,String] {
+    def bind(inp: HTMLInputElement, value: String): Unit = { inp.value = value }
+    def unbind(inp: HTMLInputElement): String = { inp.value }
+  }
+}
+
 object BasicTests extends TestSuite {
 
-  case class Thingy(foo: String, bar: String)
-  case class Thingz(foo: String, renamed: String, another: String, mostly: String)
+  case class Thing(foo: String, bar: String, baz: String)
   case class Basic1(inp: String)
 
+
   def tests = TestSuite {
-    'object4 {
+    'object3 {
       import FormidableThisTimeBetter._
+      import formidable.todo._
 
-      val foo = Thingz("YOLOYOLO","BITNNHZ","ANOTHER","OMGOMOGMOGMOMGMOG")
+      val foo = Thing("A","BB","CCC")
 
-      object ThingyLayout {
+      object ThingLayout {
         val foo = scalatags.JsDom.tags.input(`type`:="text").render
-        val another = scalatags.JsDom.tags.input(`type`:="text").render
-        val renamed = scalatags.JsDom.tags.input(`type`:="text").render
-        val mostly = scalatags.JsDom.tags.input(`type`:="text").render
+        val bar = scalatags.JsDom.tags.input(`type`:="text").render
+        val baz = scalatags.JsDom.tags.input(`type`:="text").render
       }
-      val wat: Formidable[Thingz] = MacroTest.fwat[ThingyLayout.type,Thingz](ThingyLayout)
+
+      val wat: Formidable[Thing] = MacroTest.fwat[ThingLayout.type,Thing](ThingLayout)
       wat.populate(foo)
-      println(ThingyLayout.another.value)
-      ThingyLayout.foo.value = "DDDDDDDDDIIIIIIIIIIEEEEEEEEEE"
+      assert(ThingLayout.foo.value == "A")
+      assert(ThingLayout.bar.value == "BB")
+      assert(ThingLayout.baz.value == "CCC")
+      ThingLayout.foo.value = "MODIFIED"
       val meh = wat.construct()
+      assert(meh.foo == "MODIFIED")
+      assert(meh.bar == "BB")
+      assert(meh.baz == "CCC")
       println(meh)
     }
   }
