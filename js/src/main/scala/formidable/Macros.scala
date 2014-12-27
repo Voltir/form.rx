@@ -46,6 +46,10 @@ object Macros {
       q"$layout.${layoutAccessors.find(_.name == field.name).get}.value = $term"
     }
 
+    val unmagic = fields.map { case field =>
+     q"$layout.${layoutAccessors.find(_.name == field.name).get}.value"
+    }
+
     val bnd2 = q"$companion.unapply(inp).map { case (a0,a1) => $magic }"
     val bnd3 = q"$companion.unapply(inp).map { case (a0,a1,a2) => $magic }"
     val bnd4 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3) => $magic }"
@@ -66,11 +70,7 @@ object Macros {
       }
 
       def construct(): $targetTpe = {
-        $companion.apply(
-          $layout.${layoutAccessors(0)}.value,
-          $layout.${layoutAccessors(1)}.value,
-          $layout.${layoutAccessors(2)}.value
-        )
+        $companion.apply(..$unmagic)
       }
     }
     """)
