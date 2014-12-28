@@ -55,25 +55,21 @@ object Macros {
       """
     }
 
-    val bnd2 = q"$companion.unapply(inp).map { case (a0,a1) => $magic }"
-    val bnd3 = q"$companion.unapply(inp).map { case (a0,a1,a2) => $magic }"
-    val bnd4 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3) => $magic }"
-    val bnd5 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3,a4) => $magic }"
-    val bnd6 = q"$companion.unapply(inp).map { case (a0,a1,a2,a3,a4,a5) => $magic }"
+    def bindN(n: Int) = {
+      if(n > 1 && n < 23) {
+        val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
+        q"$companion.unapply(inp).map { case (..$vars) => $magic }"
+      }
+      else {
+        c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
+      }
+    }
 
     c.Expr[Layout with formidable.FormidableThisTimeBetter.Formidable[Target]](q"""
       new $layoutTpe with Formidable[$targetTpe] {
         def populate(inp: $targetTpe): Unit = {
-          ${ fields.size match {
-            case 2 => bnd2
-            case 3 => bnd3
-            case 4 => bnd4
-            case 5 => bnd5
-            case 6 => bnd6
-            case _ => c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
-          }}
+          ${bindN(fields.size)}
         }
-
         def construct(): $targetTpe = {
           $companion.apply(..$unmagic)
         }
