@@ -1,57 +1,13 @@
 package formidable
 
-import org.scalajs.dom
-import rx._
-import rx.ops._
-import scalatags.JsDom.Modifier
 import scalatags.JsDom.all._
+import scala.language.experimental.macros
 
-trait Validator[V,T] {
-
-  def validate(inp: V): Boolean
-
-  protected def build(inp: V): T
-
-  def unbuild(inp: T): V
-
-  def create(inp: V): T = {
-    if(validate(inp)) build(inp)
-    else throw new IllegalArgumentException
-  }
+trait Formidable[Target] {
+  def populate(inp: Target): Unit
+  def construct(): Target
 }
 
-trait Field[T] {
-  def isValid: Var[Boolean]
-  def field: dom.HTMLElement
-  def populate(inp: T): Unit
-  def construct(): T
-}
-
-class InputField[T]
-  (attrs: Modifier *)
-  (validatingAttrs: (Var[Boolean] => Modifier) *)
-  (implicit validator: Validator[String,T]) extends Field[T] {
-
-  override val isValid: Var[Boolean] = Var(false)
-
-  override lazy val field: dom.HTMLInputElement = scalatags.JsDom.tags.input(
-    onkeyup := { () => isValid() = validator.validate(field.value) },
-    attrs,
-    validatingAttrs.map(_(isValid))
-  ).render
-
-  def validated: T = {
-    validator.create(field.value)
-  }
-
-  def populate(inp: T): Unit = {
-    field.value = validator.unbuild(inp)
-    isValid() = true
-  }
-
-  def construct(): T = {
-    validated
-  }
-
-  def apply[Foo](key: String) = this
+object Formidable {
+  def apply[Layout,Target]: Layout with formidable.Formidable[Target] = macro Macros.mk2[Layout,Target]
 }
