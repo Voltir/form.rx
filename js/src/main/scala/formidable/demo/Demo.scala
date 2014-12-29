@@ -23,7 +23,7 @@ object Demo2 {
 
   trait InnerLayout {
     val foo = input(`type`:="text").render
-    val bar = new SelectWith[Int](
+    val bar = SelectionOf[Int](
       Opt(1)(value:="One","One"),
       Opt(2)(value:="Two","twwo"),
       Opt(42)(value:="Life","Fizzle"),
@@ -34,6 +34,29 @@ object Demo2 {
     val top = input(`type`:="text").render
     val inner = Formidable[InnerLayout,Inner]
     val other = Formidable[InnerLayout,Inner]
+  }
+}
+
+object Demo3 {
+
+  sealed trait Color
+  case object Red extends Color
+  case object Green extends Color
+  case object Blue extends Color
+
+  case class FakeId(id: Long)
+
+  case class Info(fid: FakeId, doit: Boolean, title: String, colors: Set[Color])
+
+  trait InfoLayout {
+    val fid = Ignored(FakeId(-1))
+    val doit = CheckboxBool()
+    val title = input(`type`:="text").render
+    val colors = CheckboxSet[Color]("color")(
+      Chk(Red)(value:="Red"),
+      Chk(Green)(value:="Grn"),
+      Chk(Blue)(value:="Blue")
+    )
   }
 }
 
@@ -53,7 +76,7 @@ object DemoApp extends JSApp {
         row(column("small-12")(h3(title))),
         row(column("small-12")(description)),
         row(column("small-12")("Auto fill with ")(a(
-          href:="#",
+          href:="javascript:void(0)",
           defaultTxt,
           onclick := {() => formidable.populate(default)}
         ))),
@@ -100,10 +123,24 @@ object DemoApp extends JSApp {
     }
   }
 
+  def third: HtmlTag = {
+    import Demo3._
+    val form3 = Formidable[InfoLayout,Info]
+    val default = Info(FakeId(-1),true,"My Color Choices",Set(Red,Green))
+    template("Example 3", "Example with checkboxes")(form3,"Default",default) {
+      form(
+        label(form3.doit.input,"Do it?"),
+        form3.title,
+        form3.colors.checkboxes.map(c => label(c.input,c.input.value))
+      )
+    }
+  }
+
   def main(): Unit = {
     val content = dom.document.getElementById("content")
     content.appendChild(row(column("small-12 text-center")(h1("Example Forms"))).render)
     content.appendChild(Seq(first,hr).render)
     content.appendChild(Seq(second,hr).render)
+    content.appendChild(Seq(third,hr).render)
   }
 }
