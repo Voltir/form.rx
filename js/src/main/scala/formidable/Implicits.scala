@@ -10,22 +10,21 @@ object Implicits {
     def unbind(inp: I): O
   }
 
-  class LayoutBinder[L,T] extends Binder[L with Formidable[T],T]{
-    def bind(inp: L with Formidable[T], value: T) = inp.populate(value)
-    def unbind(inp: L with Formidable[T]): T = inp.construct()
+  class FormidableBinder[F <: Formidable[Target],Target] extends Binder[F,Target] {
+    override def bind(inp: F, value: Target) = inp.unbuild(value)
+    override def unbind(inp: F): Target = inp.build()
   }
-  implicit def ImplicitLayoutBinder[L,T]: Binder[L with Formidable[T],T] = new LayoutBinder()
+
+  implicit def implicitFormidableBinder[F <: Formidable[Target],Target]: Binder[F,Target] = new FormidableBinder[F,Target]
 
   //Binder for Ignored fields
-  class Ignored[T](val default: T)
+  class Ignored[T](val default: T) extends Formidable[T] {
+    override def unbuild(value: T): Unit = Unit
+    override def build(): T = default
+  }
   object Ignored {
     def apply[T](default: T) = new Ignored(default)
   }
-  class IgnoredBinder[T] extends Binder[Ignored[T],T] {
-    override def bind(inp: Ignored[T], value: T): Unit = Unit
-    override def unbind(inp: Ignored[T]): T = inp.default
-  }
-  implicit def implicitIgnoreBinder[T]: Binder[Ignored[T],T] = new IgnoredBinder[T]
 
   //Binder for HTMLInputElement
   implicit object InputBinder extends Binder[HTMLInputElement,String] {
@@ -52,26 +51,19 @@ object Implicits {
     def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
   }
 
-  class SelectionOf[T](options: Opt[T] *) {
+  class SelectionOf[T](options: Opt[T] *) extends Formidable[T] {
     val select = scalatags.JsDom.all.select(options.map(_.option):_*).render
 
-    def set(value: T) = options.zipWithIndex.find(_._1.value == value).foreach { case (opt,idx) =>
+    override def unbuild(value: T) = options.zipWithIndex.find(_._1.value == value).foreach { case (opt,idx) =>
       select.selectedIndex = idx
     }
 
-    def get = options(select.selectedIndex).value
+    override def build = options(select.selectedIndex).value
   }
 
   object SelectionOf {
     def apply[T](options: Opt[T] *) = new SelectionOf[T](options:_*)
   }
-
-  class SelectionOfBinder[T] extends Binder[SelectionOf[T],T] {
-    def bind(inp: SelectionOf[T], value: T) = inp.set(value)
-    def unbind(inp: SelectionOf[T]): T = inp.get
-  }
-
-  implicit def implicitSelectionOfBinder[T]: Binder[SelectionOf[T],T] = new SelectionOfBinder[T]
 
   //Binders for T <=> Radio elements
   //Binders for Set[T] <=> Checkbox elements
@@ -83,18 +75,18 @@ object Implicits {
     def apply[T](value: T)(mods: Modifier *) = new Chk(value)(mods)
   }
 
-  class CheckboxSet[T](name: String)(checks: Chk[T] *) {
+  class CheckboxSet[T](name: String)(checks: Chk[T] *) extends Formidable[Set[T]] {
     val checkboxes: Array[Chk[T]] = {
       checks.map { c => c.input.name = name; c }.toArray
     }
 
-    def set(values: Set[T]) = {
+    override def unbuild(values: Set[T]) = {
       val (checked,unchecked) = checks.partition(c => values.contains(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
     }
 
-    def get: Set[T] = {
+    override def build: Set[T] = {
       checks.filter(_.input.checked).map(_.value).toSet
     }
   }
@@ -102,13 +94,6 @@ object Implicits {
   object CheckboxSet {
     def apply[T](name: String)(checks: Chk[T] *) = new CheckboxSet[T](name)(checks:_*)
   }
-
-  class CheckboxSetBinder[T] extends Binder[CheckboxSet[T], Set[T]] {
-    override def bind(inp: CheckboxSet[T], value: Set[T]): Unit = inp.set(value)
-    override def unbind(inp: CheckboxSet[T]): Set[T] = inp.get
-  }
-
-  implicit def implicitCheckboxSetBinder[T]: Binder[CheckboxSet[T], Set[T]] = new CheckboxSetBinder[T]
 
   //Binders for Boolean <=> checkbox
   class CheckboxBool(mods: Modifier *) {

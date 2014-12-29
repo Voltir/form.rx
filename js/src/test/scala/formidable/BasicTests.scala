@@ -6,7 +6,7 @@ import scalatags.JsDom.all._
 object BasicTests extends TestSuite {
 
   //object3 test
-  case class Thing(foo: String, bar: String, fwoop: String)
+  case class Thing(foo: String, bar: String, baz: String)
 
   //nested test
   case class Inner(a: String, b: String)
@@ -29,19 +29,36 @@ object BasicTests extends TestSuite {
       trait ThingLayout {
         val foo = scalatags.JsDom.tags.input(`type`:="text").render
         val bar = scalatags.JsDom.tags.input(`type`:="text").render
-        val fwoop = scalatags.JsDom.tags.input(`type`:="text").render
+        val baz = scalatags.JsDom.tags.input(`type`:="text").render
       }
 
       val test = Formidable[ThingLayout,Thing]
-      test.populate(foo)
+      test.unbuild(foo)
       assert(test.foo.value == "A")
       assert(test.bar.value == "BB")
-      assert(test.fwoop.value == "CCC")
+      assert(test.baz.value == "CCC")
       test.foo.value = "MODIFIED"
-      val created: Thing = test.construct()
+      val created: Thing = test.build()
       assert(created.foo == "MODIFIED")
       assert(created.bar == "BB")
-      assert(created.fwoop == "CCC")
+      assert(created.baz == "CCC")
+    }
+    'ignored {
+      import formidable.Implicits._
+      trait ThingIgnoreLayout {
+        val foo = Ignored("X")
+        val bar = Ignored("Y")
+        val baz = scalatags.JsDom.tags.input(`type`:="text").render
+      }
+      val foo = Thing("A","BB","CCC")
+      val test = Formidable[ThingIgnoreLayout,Thing]
+      test.unbuild(foo)
+      assert(test.baz.value == "CCC")
+      test.baz.value = "MODIFIED"
+      val created: Thing = test.build()
+      assert(created.foo == "X")
+      assert(created.bar == "Y")
+      assert(created.baz == "MODIFIED")
     }
     'nested {
       import formidable.Implicits._
@@ -55,12 +72,12 @@ object BasicTests extends TestSuite {
         val inner = Formidable[InnerLayout,Inner]
       }
       val test = Formidable[OuterLayout,Outer]
-      test.populate(Outer("LOL",Inner("QQQ","ZZZ")))
+      test.unbuild(Outer("LOL",Inner("QQQ","ZZZ")))
       assert(test.inner.b.value == "ZZZ")
       test.inner.a.value = "Modified"
       test.inner.b.value = "Modified"
       test.foo.value = "Modified"
-      val created = test.construct()
+      val created = test.build()
       assert(created.foo == "Modified")
       assert(created.inner.a == "Modified")
       assert(created.inner.b == "Modified")
@@ -78,7 +95,7 @@ object BasicTests extends TestSuite {
       trait NotStringLayout {
         val foo = input(`type`:="text").render
         val bar = input(`type`:="text").render
-        val baz = new SelectWith[ChoiceLike](
+        val baz = SelectionOf[ChoiceLike](
           Opt(FirstChoice)(value:="first", "Yolo"),
           Opt(SecondChoice)(value:="second", "Booof"),
           Opt(ThirdChoice("Foo",42))(value:="third", "wizzyiiziz")
@@ -86,10 +103,10 @@ object BasicTests extends TestSuite {
       }
 
       val test = Formidable[NotStringLayout,NotStrings]
-      test.populate(NotStrings(111,Wrapped(222),SecondChoice))
+      test.unbuild(NotStrings(111,Wrapped(222),SecondChoice))
       assert(test.foo.value == "111")
       assert(test.bar.value == "222")
-      assert(test.baz.get == SecondChoice)
+      assert(test.baz.build == SecondChoice)
     }
   }
 }

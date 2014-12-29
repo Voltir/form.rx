@@ -4,8 +4,8 @@ import scalatags.JsDom.all._
 import scala.language.experimental.macros
 
 trait Formidable[Target] {
-  def populate(inp: Target): Unit
-  def construct(): Target
+  def build(): Target
+  def unbuild(inp: Target): Unit
 }
 
 object Formidable {

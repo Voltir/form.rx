@@ -15,8 +15,8 @@ object Build extends sbt.Build {
     name := "formidable",
     ScalaJSKeys.postLinkJSEnv := new scala.scalajs.sbtplugin.env.nodejs.NodeJSEnv("nodejs"),
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided",
-      "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided"
+      "com.lihaoyi" %% "acyclic" % "0.1.2",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value 
     )
   )
 

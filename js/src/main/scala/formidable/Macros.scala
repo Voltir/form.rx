@@ -55,10 +55,10 @@ object Macros {
 
     c.Expr[Layout with formidable.Formidable[Target]](q"""
       new $layoutTpe with Formidable[$targetTpe] {
-        def populate(inp: $targetTpe): Unit = {
+        def unbuild(inp: $targetTpe): Unit = {
           ${bindN(fields.size)}
         }
-        def construct(): $targetTpe = {
+        def build(): $targetTpe = {
           $companion.apply(..$unmagic)
         }
       }
