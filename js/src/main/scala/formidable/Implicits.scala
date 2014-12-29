@@ -5,11 +5,6 @@ object Implicits {
   import org.scalajs.dom.HTMLInputElement
   import scalatags.JsDom.all._
 
-  trait Binder[I,O] {
-    def bind(inp: I, value: O): Unit
-    def unbind(inp: I): O
-  }
-
   class FormidableBinder[F <: Formidable[Target],Target] extends Binder[F,Target] {
     override def bind(inp: F, value: Target) = inp.unbuild(value)
     override def unbind(inp: F): Target = inp.build()

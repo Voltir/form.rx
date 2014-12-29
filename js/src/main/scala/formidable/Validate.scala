@@ -7,52 +7,34 @@ import scalatags.JsDom.all._
 
 //WIP
 
-trait Validator[V,T] {
-
+trait Validator[V,T] extends Formidable[T] {
   def validate(inp: V): Boolean
-
-  protected def build(inp: V): T
-
-  def unbuild(inp: T): V
-
-  def create(inp: V): T = {
-    if(validate(inp)) build(inp)
-    else throw new IllegalArgumentException
-  }
 }
 
-trait Field[T] {
-  def isValid: Var[Boolean]
-  def field: dom.HTMLElement
-  def populate(inp: T): Unit
-  def construct(): T
-}
-
-class InputField[T]
+class InputOf[T]
   (attrs: Modifier *)
   (validatingAttrs: (Var[Boolean] => Modifier) *)
-  (implicit validator: Validator[String,T]) extends Field[T] {
+  (implicit validator: Validator[String,T]) {
 
-  override val isValid: Var[Boolean] = Var(false)
+  val isValid: Var[Boolean] = Var(false)
 
-  override lazy val field: dom.HTMLInputElement = scalatags.JsDom.tags.input(
-    onkeyup := { () => isValid() = validator.validate(field.value) },
+  lazy val input: dom.HTMLInputElement = scalatags.JsDom.tags.input(
+    onkeyup := { () => isValid() = validator.validate(input.value) },
     attrs,
     validatingAttrs.map(_(isValid))
   ).render
 
-  def validated: T = {
-    validator.create(field.value)
-  }
+//  def validated: T = {
+//    validator.create(field.value)
+//  }
+//
+//  def populate(inp: T): Unit = {
+//    field.value = validator.unbuild(inp)
+//    isValid() = true
+//  }
+//
+//  def construct(): T = {
+//    validated
+//  }
 
-  def populate(inp: T): Unit = {
-    field.value = validator.unbuild(inp)
-    isValid() = true
-  }
-
-  def construct(): T = {
-    validated
-  }
-
-  def apply[Foo](key: String) = this
 }

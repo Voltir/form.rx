@@ -12,7 +12,7 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def mk2[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with formidable.Formidable[Target]] = {
+  def mk2[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with Formidable[Target]] = {
     import c.universe._
 
     val targetTpe = weakTypeTag[Target].tpe
@@ -53,7 +53,7 @@ object Macros {
       }
     }
 
-    c.Expr[Layout with formidable.Formidable[Target]](q"""
+    c.Expr[Layout with Formidable[Target]](q"""
       new $layoutTpe with Formidable[$targetTpe] {
         def unbuild(inp: $targetTpe): Unit = {
           ${bindN(fields.size)}

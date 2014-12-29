@@ -78,7 +78,7 @@ object DemoApp extends JSApp {
         row(column("small-12")("Auto fill with ")(a(
           href:="javascript:void(0)",
           defaultTxt,
-          onclick := {() => formidable.populate(default)}
+          onclick := {() => formidable.unbuild(default)}
         ))),
         row(column("small-12")(created))
       ),
@@ -86,7 +86,7 @@ object DemoApp extends JSApp {
         formTag(
           input(`type`:="Submit"),
           onsubmit := {() =>
-            val txt = s"${formidable.construct()}"
+            val txt = s"${formidable.build()}"
             created.innerHTML = txt
             false
           }

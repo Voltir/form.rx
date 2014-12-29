@@ -1,6 +1,5 @@
 package formidable
 
-import scalatags.JsDom.all._
 import scala.language.experimental.macros
 
 trait Formidable[Target] {
@@ -9,5 +8,5 @@ trait Formidable[Target] {
 }
 
 object Formidable {
-  def apply[Layout,Target]: Layout with formidable.Formidable[Target] = macro Macros.mk2[Layout,Target]
+  def apply[Layout,Target]: Layout with Formidable[Target] = macro Macros.mk2[Layout,Target]
 }
