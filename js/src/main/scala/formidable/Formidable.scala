@@ -1,9 +1,10 @@
 package formidable
 
 import scala.language.experimental.macros
+import scala.util.Try
 
 trait Formidable[Target] {
-  def build(): Target
+  def build(): Try[Target]
   def unbuild(inp: Target): Unit
 }
 

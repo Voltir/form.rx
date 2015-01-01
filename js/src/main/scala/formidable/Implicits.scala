@@ -1,5 +1,6 @@
 package formidable
 
+import scala.util.{Try,Success,Failure}
 
 object Implicits {
   import org.scalajs.dom.HTMLInputElement
@@ -7,7 +8,7 @@ object Implicits {
 
   class FormidableBinder[F <: Formidable[Target],Target] extends Binder[F,Target] {
     override def bind(inp: F, value: Target) = inp.unbuild(value)
-    override def unbind(inp: F): Target = inp.build()
+    override def unbind(inp: F): Try[Target] = inp.build()
   }
 
   implicit def implicitFormidableBinder[F <: Formidable[Target],Target]: Binder[F,Target] = new FormidableBinder[F,Target]
@@ -15,7 +16,7 @@ object Implicits {
   //Binder for Ignored fields
   class Ignored[T](val default: T) extends Formidable[T] {
     override def unbuild(value: T): Unit = Unit
-    override def build(): T = default
+    override def build(): Try[T] = Success(default)
   }
   object Ignored {
     def apply[T](default: T) = new Ignored(default)
@@ -24,12 +25,12 @@ object Implicits {
   //Binder for HTMLInputElement
   implicit object InputBinder extends Binder[HTMLInputElement,String] {
     def bind(inp: HTMLInputElement, value: String): Unit = { inp.value = value }
-    def unbind(inp: HTMLInputElement): String = { inp.value }
+    def unbind(inp: HTMLInputElement): Try[String] = { Success(inp.value) }
   }
 
   class InputNumericBinder[N: Numeric](unbindf: String => N) extends Binder[HTMLInputElement,N] {
     def bind(inp: HTMLInputElement, value: N): Unit = { inp.value = value.toString }
-    def unbind(inp: HTMLInputElement): N = { unbindf(inp.value) }
+    def unbind(inp: HTMLInputElement): Try[N] = Try { unbindf(inp.value) }
   }
 
   implicit val InputIntBinder = new InputNumericBinder[Int](_.toInt)
@@ -53,7 +54,7 @@ object Implicits {
       select.selectedIndex = idx
     }
 
-    override def build = options(select.selectedIndex).value
+    override def build: Try[T] = Try { options(select.selectedIndex).value }
   }
 
   object SelectionOf {
@@ -81,7 +82,7 @@ object Implicits {
       unchecked.foreach { _.input.checked = false }
     }
 
-    override def build: Set[T] = {
+    override def build: Try[Set[T]] = Try {
       checks.filter(_.input.checked).map(_.value).toSet
     }
   }
@@ -99,7 +100,7 @@ object Implicits {
   }
   class CheckboxBoolBinder extends Binder[CheckboxBool,Boolean] {
     override def bind(inp: CheckboxBool, value: Boolean): Unit = inp.input.checked = value
-    override def unbind(inp: CheckboxBool): Boolean = inp.input.checked
+    override def unbind(inp: CheckboxBool): Try[Boolean] = Try { inp.input.checked }
   }
   implicit def implicitCheckboxBoolBinder = new CheckboxBoolBinder
 }

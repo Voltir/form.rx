@@ -2,6 +2,7 @@ package formidable
 
 import utest._
 import scalatags.JsDom.all._
+import scala.util._
 
 object BasicTests extends TestSuite {
 
@@ -38,7 +39,7 @@ object BasicTests extends TestSuite {
       assert(test.bar.value == "BB")
       assert(test.baz.value == "CCC")
       test.foo.value = "MODIFIED"
-      val created: Thing = test.build()
+      val created: Thing = test.build().get
       assert(created.foo == "MODIFIED")
       assert(created.bar == "BB")
       assert(created.baz == "CCC")
@@ -55,7 +56,7 @@ object BasicTests extends TestSuite {
       test.unbuild(foo)
       assert(test.baz.value == "CCC")
       test.baz.value = "MODIFIED"
-      val created: Thing = test.build()
+      val created: Thing = test.build().get
       assert(created.foo == "X")
       assert(created.bar == "Y")
       assert(created.baz == "MODIFIED")
@@ -77,7 +78,7 @@ object BasicTests extends TestSuite {
       test.inner.a.value = "Modified"
       test.inner.b.value = "Modified"
       test.foo.value = "Modified"
-      val created = test.build()
+      val created = test.build().get
       assert(created.foo == "Modified")
       assert(created.inner.a == "Modified")
       assert(created.inner.b == "Modified")
@@ -89,7 +90,7 @@ object BasicTests extends TestSuite {
 
       implicit object WrappedBinder extends Binder[dom.HTMLInputElement,Wrapped] {
         def bind(inp: dom.HTMLInputElement, value: Wrapped): Unit = { inp.value = value.value.toString }
-        def unbind(inp: dom.HTMLInputElement): Wrapped = { Wrapped(inp.value.toLong) }
+        def unbind(inp: dom.HTMLInputElement): Try[Wrapped] = { Success(Wrapped(inp.value.toLong)) }
       }
 
       trait NotStringLayout {
@@ -106,7 +107,7 @@ object BasicTests extends TestSuite {
       test.unbuild(NotStrings(111,Wrapped(222),SecondChoice))
       assert(test.foo.value == "111")
       assert(test.bar.value == "222")
-      assert(test.baz.build == SecondChoice)
+      assert(test.baz.build == Success(SecondChoice))
     }
   }
 }

@@ -10,7 +10,7 @@ object Build extends sbt.Build {
 
   val cross = new utest.jsrunner.JsCrossBuild(
     organization := "com.stabletech",
-    version := "0.0.1",
+    version := "0.0.1-SNAPSHOT",
     scalaVersion := "2.11.4",
     name := "formidable",
     ScalaJSKeys.postLinkJSEnv := new scala.scalajs.sbtplugin.env.nodejs.NodeJSEnv("nodejs"),

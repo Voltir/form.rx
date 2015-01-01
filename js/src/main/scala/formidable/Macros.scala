@@ -32,15 +32,15 @@ object Macros {
 
     val companion = getCompanion(c)(targetTpe)
 
-    val magic = fields.zipWithIndex.map { case (field,idx) =>
+    val magic: List[c.Tree] = fields.zipWithIndex.map { case (field,idx) =>
       val term = TermName(s"a$idx")
       val accessor = layoutAccessors.find(_.name == field.name).get
       q"implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term)"
     }
 
-    val unmagic = fields.map { case field =>
+    val unmagic: List[c.Tree] = fields.map { case field =>
       val accessor = layoutAccessors.find(_.name == field.name).get
-      q"implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor)"
+      q"implicitly[Binder[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor).get"
     }
 
     def bindN(n: Int) = {
@@ -58,7 +58,7 @@ object Macros {
         def unbuild(inp: $targetTpe): Unit = {
           ${bindN(fields.size)}
         }
-        def build(): $targetTpe = {
+        def build(): Try[$targetTpe] = Try {
           $companion.apply(..$unmagic)
         }
       }
