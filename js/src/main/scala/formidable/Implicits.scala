@@ -1,5 +1,6 @@
 package formidable
 
+import scala.collection.LinearSeq
 import scala.util.{Try,Success,Failure}
 
 object Implicits {
@@ -47,48 +48,37 @@ object Implicits {
     def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
   }
 
-  class SelectionOf[T](options: Opt[T] *) extends Formidable[T] {
-    val select = scalatags.JsDom.all.select(options.map(_.option):_*).render
+  class SelectionOf[T](selectMods: Modifier *)(options: Opt[T] *) extends Formidable[T] {
+    val select = scalatags.JsDom.all.select(selectMods)(options.map(_.option):_*).render
 
-    override def unbuild(value: T) = options.zipWithIndex.find(_._1.value == value).foreach { case (opt,idx) =>
-      select.selectedIndex = idx
-    }
+    override def unbuild(value: T): Unit = select.selectedIndex = options.indexWhere(_.value == value)
 
-    override def build: Try[T] = Try { options(select.selectedIndex).value }
+    override def build(): Try[T] = Try { options(select.selectedIndex).value }
   }
 
   object SelectionOf {
-    def apply[T](options: Opt[T] *) = new SelectionOf[T](options:_*)
+    def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionOf[T](selectMods)(options)
   }
 
   //Binders for T <=> Radio elements
-  //Binders for Set[T] <=> Checkbox elements
-  class Chk[+T](val value: T)(mods: Modifier *) {
-    val input = scalatags.JsDom.all.input(`type`:="checkbox",mods).render
+  class Radio[+T](val value: T)(mods: Modifier *) {
+    val input = scalatags.JsDom.all.input(`type`:="radio",mods).render
   }
 
-  object Chk {
-    def apply[T](value: T)(mods: Modifier *) = new Chk(value)(mods)
+  object Radio {
+    def apply[T](value: T)(mods: Modifier *) = new Radio(value)(mods)
   }
 
-  class CheckboxSet[T](name: String)(checks: Chk[T] *) extends Formidable[Set[T]] {
-    val checkboxes: Array[Chk[T]] = {
-      checks.map { c => c.input.name = name; c }.toArray
-    }
+  class RadioOf[T](name: String)(val radios: Radio[T] *) extends Formidable[T] {
+    radios.foreach(_.input.name = name)
 
-    override def unbuild(values: Set[T]) = {
-      val (checked,unchecked) = checks.partition(c => values.contains(c.value))
-      checked.foreach   { _.input.checked = true  }
-      unchecked.foreach { _.input.checked = false }
-    }
+    def unbuild(value: T): Unit = radios.find(_.value == value).foreach { _.input.checked = true }
 
-    override def build: Try[Set[T]] = Try {
-      checks.filter(_.input.checked).map(_.value).toSet
-    }
+    def build(): Try[T] = Try { radios.find(_.input.checked).get.value }
   }
 
-  object CheckboxSet {
-    def apply[T](name: String)(checks: Chk[T] *) = new CheckboxSet[T](name)(checks:_*)
+  object RadioOf {
+    def apply[T](name: String)(radios: Radio[T] *) = new RadioOf[T](name)(radios)
   }
 
   //Binders for Boolean <=> checkbox
@@ -102,5 +92,55 @@ object Implicits {
     override def bind(inp: CheckboxBool, value: Boolean): Unit = inp.input.checked = value
     override def unbind(inp: CheckboxBool): Try[Boolean] = Try { inp.input.checked }
   }
-  implicit def implicitCheckboxBoolBinder = new CheckboxBoolBinder
+  implicit def implicitCheckboxBoolBinder: Binder[CheckboxBool,Boolean] = new CheckboxBoolBinder
+
+  //Binders for Set[T] <=> Checkbox elements
+  class Chk[+T](val value: T)(mods: Modifier *) {
+    val input = scalatags.JsDom.all.input(`type`:="checkbox",mods).render
+  }
+
+  object Chk {
+    def apply[T](value: T)(mods: Modifier *) = new Chk(value)(mods)
+  }
+
+  //  class CheckboxSet[T](name: String)(checks: Chk[T] *) extends Formidable[Set[T]] {
+  //    val checkboxes: Array[Chk[T]] = {
+  //      checks.map { c => c.input.name = name; c }.toArray
+  //    }
+  //
+  //    override def unbuild(values: Set[T]) = {
+  //      val (checked,unchecked) = checks.partition(c => values.contains(c.value))
+  //      checked.foreach   { _.input.checked = true  }
+  //      unchecked.foreach { _.input.checked = false }
+  //    }
+  //
+  //    override def build(): Try[Set[T]] = Try {
+  //      checks.filter(_.input.checked).map(_.value).toSet
+  //    }
+  //  }
+  //
+  //  object CheckboxSet {
+  //    def apply[T](name: String)(checks: Chk[T] *) = new CheckboxSet[T](name)(checks:_*)
+  //  }
+
+  class CheckboxBase[T, Container[_] <: LinearSeq[_]](name: String)(buildFrom: Seq[T] => Container[T])(checks: Chk[T] *) extends Formidable[Container[T]] {
+    val checkboxes: Array[Chk[T]] = checks.map { c => c.input.name = name; c }.toArray
+
+    override def unbuild(values: Container[T]) = {
+      val (checked,unchecked) = checks.partition(c => values.contains(c.value))
+      checked.foreach   { _.input.checked = true  }
+      unchecked.foreach { _.input.checked = false }
+    }
+
+    override def build(): Try[Container[T]] = Try {
+      buildFrom(checks.filter(_.input.checked).map(_.value))
+    }
+  }
+
+  object CheckboxOf {
+    def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBase[T,Set](name)(_.toSet)(checks:_*)
+    def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBase[T,List](name)(_.toList)(checks:_*)
+    def array[T](name: String)(checks: Chk[T] *)  = new CheckboxBase[T,Array](name)(_.toArray)(checks:_*)
+    def vector[T](name: String)(checks: Chk[T] *) = new CheckboxBase[T,Vector](name)(_.toVector)(checks:_*)
+  }
 }
