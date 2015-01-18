@@ -26,16 +26,16 @@ object Build extends sbt.Build {
   lazy val js = cross.js.settings(
     //ScalaJSKeys.jsDependencies += scala.scalajs.sbtplugin.RuntimeDOM,
     libraryDependencies ++= Seq(
-      "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom,
-      "com.lihaoyi" %%% "utest" % Versions.utest,
-      "com.lihaoyi" %%% "scalarx" % Versions.scalarx,
-      "com.lihaoyi" %%% "scalatags" % Versions.scalatags
+      "org.scala-js" %%%! "scalajs-dom" % Versions.scalajsDom,
+      //"com.lihaoyi" %%% "utest" % Versions.utest,
+      "com.lihaoyi" %%%! "scalarx" % Versions.scalarx,
+      "com.lihaoyi" %%%! "scalatags" % Versions.scalatags
     )
   )
 
   lazy val jvm = cross.jvm.settings(
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "utest" % Versions.utest,
+      //"com.lihaoyi" %% "utest" % Versions.utest,
       "com.lihaoyi" %% "scalarx" % Versions.scalarx,
       "com.lihaoyi" %% "scalatags" % Versions.scalatags
     )

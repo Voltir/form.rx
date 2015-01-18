@@ -1,6 +1,7 @@
 package formidable
 
-import scala.collection.LinearSeq
+import scala.collection.{SetLike, GenSetLike, LinearSeq}
+import scala.collection.immutable.TreeSet
 import scala.util.{Try,Success,Failure}
 
 object Implicits {
@@ -57,7 +58,7 @@ object Implicits {
   }
 
   object SelectionOf {
-    def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionOf[T](selectMods)(options)
+    def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionOf[T](selectMods)(options:_*)
   }
 
   //Binders for T <=> Radio elements
@@ -78,7 +79,7 @@ object Implicits {
   }
 
   object RadioOf {
-    def apply[T](name: String)(radios: Radio[T] *) = new RadioOf[T](name)(radios)
+    def apply[T](name: String)(radios: Radio[T] *) = new RadioOf[T](name)(radios:_*)
   }
 
   //Binders for Boolean <=> checkbox
@@ -123,11 +124,11 @@ object Implicits {
   //    def apply[T](name: String)(checks: Chk[T] *) = new CheckboxSet[T](name)(checks:_*)
   //  }
 
-  class CheckboxBase[T, Container[_] <: LinearSeq[_]](name: String)(buildFrom: Seq[T] => Container[T])(checks: Chk[T] *) extends Formidable[Container[T]] {
+  class CheckboxBase[T, Container[_]](name: String)(buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)(checks: Chk[T] *) extends Formidable[Container[T]] {
     val checkboxes: Array[Chk[T]] = checks.map { c => c.input.name = name; c }.toArray
 
     override def unbuild(values: Container[T]) = {
-      val (checked,unchecked) = checks.partition(c => values.contains(c.value))
+      val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
     }
@@ -138,9 +139,8 @@ object Implicits {
   }
 
   object CheckboxOf {
-    def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBase[T,Set](name)(_.toSet)(checks:_*)
-    def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBase[T,List](name)(_.toList)(checks:_*)
-    def array[T](name: String)(checks: Chk[T] *)  = new CheckboxBase[T,Array](name)(_.toArray)(checks:_*)
-    def vector[T](name: String)(checks: Chk[T] *) = new CheckboxBase[T,Vector](name)(_.toVector)(checks:_*)
+    def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBase[T,Set](name)(_.toSet, c => v => c.contains(v))(checks:_*)
+    def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBase[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
+    //def vector[T](name: String)(checks: Chk[T] *) = new CheckboxBase[T,Vector](name)(_.toVector)(checks:_*)
   }
 }
