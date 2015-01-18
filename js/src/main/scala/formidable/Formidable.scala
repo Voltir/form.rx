@@ -9,5 +9,5 @@ trait Formidable[Target] {
 }
 
 object Formidable {
-  def apply[Layout,Target]: Layout with Formidable[Target] = macro Macros.mk2[Layout,Target]
+  def apply[Layout,Target]: Layout with Formidable[Target] = macro Macros.generate[Layout,Target]
 }

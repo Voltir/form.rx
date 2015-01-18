@@ -12,7 +12,7 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def mk2[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with Formidable[Target]] = {
+  def generate[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with Formidable[Target]] = {
     import c.universe._
 
     val targetTpe = weakTypeTag[Target].tpe
