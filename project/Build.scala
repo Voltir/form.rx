@@ -7,44 +7,45 @@ import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 object Build extends sbt.Build {
 
 
-  val cross = new utest.jsrunner.JsCrossBuild(
+  val cross = crossProject.in(file(".")).settings(
     organization := "com.stabletech",
-    version := "0.0.2-SNAPSHOT",
-    scalaVersion := "2.11.4",
+    version := "0.0.3-SNAPSHOT",
+    scalaVersion := "2.11.5",
     name := "formidable",
     autoCompilerPlugins := true,
     addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2"),
     //ScalaJSKeys.postLinkJSEnv := new scala.scalajs.sbtplugin.env.nodejs.NodeJSEnv("nodejs"),
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "acyclic" % "0.1.2",
+      "com.lihaoyi" %%% "scalarx" % Versions.scalarx,
+      "com.lihaoyi" %%% "scalatags" % Versions.scalatags,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value 
-    )
-  )
-
-  lazy val root = cross.root.enablePlugins(ScalaJSPlugin)
-
-  lazy val js = cross.js.settings(
-    //ScalaJSKeys.jsDependencies += scala.scalajs.sbtplugin.RuntimeDOM,
+    ),
+    resolvers += "reactivesecurity github repo" at "http://voltir.github.io/formidable/",
+    publishTo := Some(Resolver.file(
+      "Github Pages", new File("/home/nick/publish/formidable"))
+    ) 
+  ).jvmSettings(
     libraryDependencies ++= Seq(
-      "org.scala-js" %%%! "scalajs-dom" % Versions.scalajsDom,
-      //"com.lihaoyi" %%% "utest" % Versions.utest,
-      "com.lihaoyi" %%%! "scalarx" % Versions.scalarx,
-      "com.lihaoyi" %%%! "scalatags" % Versions.scalatags
+      "com.lihaoyi" %% "acyclic" % "0.1.2"
     )
-  )
-
-  lazy val jvm = cross.jvm.settings(
+  ).jsSettings(
     libraryDependencies ++= Seq(
-      //"com.lihaoyi" %% "utest" % Versions.utest,
-      "com.lihaoyi" %% "scalarx" % Versions.scalarx,
-      "com.lihaoyi" %% "scalatags" % Versions.scalatags
+      "org.scala-js" %%%! "scalajs-dom" % Versions.scalajsDom
     )
   )
 
+  //lazy val root = cross.root.enablePlugins(ScalaJSPlugin)
+  lazy val root = cross.enablePlugins(ScalaJSPlugin)
+
+
+  lazy val jvm = cross.jvm
+  
+  lazy val js = cross.js
+  
   object Versions {
-    val scalajsDom = "0.7.0"
-    val scalatags = "0.4.3-RC1"
-    val scalarx = "0.2.7-RC1"
-    val utest = "0.2.5-RC1"
+    val scalajsDom = "0.8.0"
+    val scalatags = "0.4.5"
+    val scalarx = "0.2.7"
+    val utest = "0.3.0"
   }
 }

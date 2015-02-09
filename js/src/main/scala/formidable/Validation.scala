@@ -15,7 +15,7 @@ object Validation {
 
     val current: Var[Try[T]] = Var(Failure(Unitialized))
 
-    lazy val input: org.scalajs.dom.HTMLInputElement = scalatags.JsDom.all.input(
+    lazy val input: org.scalajs.dom.html.Input = scalatags.JsDom.all.input(
       `type` := "text",
       onkeyup := { () => current() = check(input.value)},
       mods,

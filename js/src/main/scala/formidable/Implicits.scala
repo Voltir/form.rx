@@ -1,12 +1,10 @@
 package formidable
 
-import scala.collection.{SetLike, GenSetLike, LinearSeq}
-import scala.collection.immutable.TreeSet
-import scala.util.{Try,Success,Failure}
+import scala.util.{Try,Success}
 
 object Implicits {
-  import org.scalajs.dom.HTMLInputElement
-  import scalatags.JsDom.all._
+  import org.scalajs.dom._
+  import scalatags.JsDom.all.{html => _, _}
 
   class FormidableBinder[F <: Formidable[Target],Target] extends Binder[F,Target] {
     override def bind(inp: F, value: Target) = inp.unbuild(value)
@@ -25,14 +23,14 @@ object Implicits {
   }
 
   //Binder for HTMLInputElement
-  implicit object InputBinder extends Binder[HTMLInputElement,String] {
-    def bind(inp: HTMLInputElement, value: String): Unit = { inp.value = value }
-    def unbind(inp: HTMLInputElement): Try[String] = { Success(inp.value) }
+  implicit object InputBinder extends Binder[html.Input,String] {
+    def bind(inp: html.Input, value: String): Unit = { inp.value = value }
+    def unbind(inp: html.Input): Try[String] = { Success(inp.value) }
   }
 
-  class InputNumericBinder[N: Numeric](unbindf: String => N) extends Binder[HTMLInputElement,N] {
-    def bind(inp: HTMLInputElement, value: N): Unit = { inp.value = value.toString }
-    def unbind(inp: HTMLInputElement): Try[N] = Try { unbindf(inp.value) }
+  class InputNumericBinder[N: Numeric](unbindf: String => N) extends Binder[html.Input,N] {
+    def bind(inp: html.Input, value: N): Unit = { inp.value = value.toString }
+    def unbind(inp: html.Input): Try[N] = Try { unbindf(inp.value) }
   }
 
   implicit val InputIntBinder = new InputNumericBinder[Int](_.toInt)
