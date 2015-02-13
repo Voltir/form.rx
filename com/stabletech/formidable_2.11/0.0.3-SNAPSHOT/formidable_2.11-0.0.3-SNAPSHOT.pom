@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.stabletech</groupId>
+    <artifactId>formidable_2.11</artifactId>
+    <packaging>jar</packaging>
+    <description>formidable</description>
+    <version>0.0.3-SNAPSHOT</version>
+    <name>formidable</name>
+    <organization>
+        <name>com.stabletech</name>
+    </organization>
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>acyclic_2.11</artifactId>
+            <version>0.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>scalarx_2.11</artifactId>
+            <version>0.2.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>scalatags_2.11</artifactId>
+            <version>0.4.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>2.11.5</version>
+        </dependency>
+    </dependencies>
+    <repositories>
+        <repository>
+            <id>reactivesecuritygithubrepo</id>
+            <name>reactivesecurity github repo</name>
+            <url>http://voltir.github.io/formidable/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+</project>
