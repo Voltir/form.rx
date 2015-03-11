@@ -32,17 +32,15 @@
             <version>0.4.5</version>
         </dependency>
         <dependency>
+            <groupId>com.lihaoyi</groupId>
+            <artifactId>utest_2.11</artifactId>
+            <version>0.3.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
             <version>2.11.5</version>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>reactivesecuritygithubrepo</id>
-            <name>reactivesecurity github repo</name>
-            <url>http://voltir.github.io/formidable/</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
 </project>
