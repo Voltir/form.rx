@@ -44,7 +44,7 @@ object Macros {
     }
 
     def bindN(n: Int) = {
-      if(n > 1 && n < 23) {
+      if(n > 0 && n < 23) {
         val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
         q"$companion.unapply(inp).map { case (..$vars) => $magic }"
       }

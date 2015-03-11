@@ -6,7 +6,6 @@ import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 
 object Build extends sbt.Build {
 
-
   val cross = crossProject.in(file(".")).settings(
     organization := "com.stabletech",
     version := "0.0.3-SNAPSHOT",
@@ -14,33 +13,34 @@ object Build extends sbt.Build {
     name := "formidable",
     autoCompilerPlugins := true,
     addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2"),
-    //ScalaJSKeys.postLinkJSEnv := new scala.scalajs.sbtplugin.env.nodejs.NodeJSEnv("nodejs"),
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "scalarx" % Versions.scalarx,
       "com.lihaoyi" %%% "scalatags" % Versions.scalatags,
+      "com.lihaoyi" %%% "utest" % Versions.utest % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value 
     ),
-    resolvers += "reactivesecurity github repo" at "http://voltir.github.io/formidable/",
+   testFrameworks += new TestFramework("utest.runner.Framework"),
     publishTo := Some(Resolver.file(
       "Github Pages", new File("/home/nick/publish/formidable"))
     ) 
   ).jvmSettings(
     libraryDependencies ++= Seq(
       "com.lihaoyi" %% "acyclic" % "0.1.2"
+    ),
+    publishTo := Some(Resolver.file(
+      "Github Pages", new File("/home/nick/publish/formidable"))
     )
   ).jsSettings(
     libraryDependencies ++= Seq(
-      "org.scala-js" %%%! "scalajs-dom" % Versions.scalajsDom
+      "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom
     )
   )
 
-  //lazy val root = cross.root.enablePlugins(ScalaJSPlugin)
-  lazy val root = cross.enablePlugins(ScalaJSPlugin)
+  val root = cross.enablePlugins(ScalaJSPlugin)
 
-
-  lazy val jvm = cross.jvm
+  val jvm = cross.jvm
   
-  lazy val js = cross.js
+  val js = cross.js
   
   object Versions {
     val scalajsDom = "0.8.0"
