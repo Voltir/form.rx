@@ -28,9 +28,32 @@ object Validation {
       current() = Success(inp)
       input.value = asString(inp)
     }
+
+  }
+
+  class ValidateNumber[N: Numeric, T]
+      (check: N => Try[T], asNumber: T => N, fromString: String => N, mods: Modifier*)
+      (rxMods: (Var[Try[T]] => Modifier)*) extends Formidable[T] {
+
+    val current: Var[Try[T]] = Var(Failure(Unitialized))
+
+    lazy val input: org.scalajs.dom.html.Input = scalatags.JsDom.all.input(
+      `type` := "text",
+      onkeyup := { () => current() = check(fromString(input.value))},
+      mods,
+      rxMods.map(_(current))
+    ).render
+
+    override def build(): Try[T] = current()
+
+    override def unbuild(inp: T) = {
+      current() = Success(inp)
+      input.value = asNumber(inp).toString
+    }
   }
 
   object Validate {
     def apply[T](check: String => Try[T], asString: T => String, mods: Modifier*)(rxMods: (Var[Try[T]] => Modifier)*)  = new Validate(check,asString,mods:_*)(rxMods:_*)
+    def apply[N: Numeric, T](check: N => Try[T], asNumber: T => N, fromString: String => N, mods: Modifier*)(rxMods: (Var[Try[T]] => Modifier)*) = new ValidateNumber[N,T](check,asNumber, fromString, mods:_*)(rxMods:_*)
   }
 }
