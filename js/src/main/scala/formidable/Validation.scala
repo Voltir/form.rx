@@ -54,6 +54,6 @@ object Validation {
 
   object Validate {
     def apply[T](check: String => Try[T], asString: T => String, mods: Modifier*)(rxMods: (Var[Try[T]] => Modifier)*)  = new Validate(check,asString,mods:_*)(rxMods:_*)
-    def apply[N: Numeric, T](check: N => Try[T], asNumber: T => N, fromString: String => N, mods: Modifier*)(rxMods: (Var[Try[T]] => Modifier)*) = new ValidateNumber[N,T](check,asNumber, fromString, mods:_*)(rxMods:_*)
+    def int[T](check: Int => Try[T], asInt: T => Int, mods: Modifier*)(rxMods: (Var[Try[T]] => Modifier)*) = new ValidateNumber[Int,T](check, asInt, _.toInt , mods:_*)(rxMods:_*)
   }
 }
