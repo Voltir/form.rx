@@ -18,6 +18,12 @@ object ImplicitsNext {
 
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
+  class BindVarRx[T]() extends BindRx[rx.Var[T],T] {
+    override def bind(inp: rx.Var[T], value: T) = inp() = value
+    override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { inp() ; inp.toTry }
+  }
+  implicit def implicitBindVarRx[Target] = new BindVarRx[Target]()
+
   //Helper trait to shove Rx[Try[T]] into a dom.html.Input
   trait InputRxShove[T] {
     protected def ensureShove(inp: html.Input)(make: String => Try[T]): rx.Rx[Try[T]] = {
