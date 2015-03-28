@@ -3,8 +3,10 @@ package formidable
 import formidable.Implicits.{Chk, CheckboxBool, Radio, Opt}
 import org.scalajs.dom
 import org.scalajs.dom.html
+import scala.collection.mutable
 import scala.scalajs.js
 import scala.util.{Success, Try}
+import scalatags.JsDom.TypedTag
 
 object ImplicitsNext {
   import org.scalajs.dom._
@@ -163,5 +165,80 @@ object ImplicitsNext {
   object CheckboxRx {
     def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBaseRx[T,Set](name)(_.toSet, c => v => c.contains(v))(checks:_*)
     def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBaseRx[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
+  }
+
+
+
+
+  //OMG THINK BETTER
+  trait LolRx[T, Container[_] <: Traversable[_]] extends FormidableRx[Container[T]] {
+    import KeyboardPolyfill._
+
+    val values: rx.Var[Container[T]]
+
+    lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try { values() } }
+
+    override def unbuild(newValues: Container[T]) = {
+      values() = newValues
+    }
+
+    def pop(): Unit
+
+    protected val inputTag: TypedTag[dom.html.Input]
+
+    val fetch: String => T
+
+    protected def append(elem: T): Unit
+
+    private def handleKeyUp: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
+      (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
+        val key = evt.polyfill()._1
+
+        if(key == KCode.Comma) {
+          val elem = fetch(jsThis.value.take(jsThis.value.size - 1))
+          jsThis.value = ""
+          append(elem)
+          values.recalc()
+        }
+
+        if(key == KCode.Enter) {
+          val elem = fetch(jsThis.value)
+          jsThis.value = ""
+          append(elem)
+          values.recalc()
+        }
+
+        if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
+          pop()
+          values.recalc()
+        }
+      }
+    }
+
+    lazy val input: dom.html.Input = inputTag(
+      `type`:="text",
+      scalatags.JsDom.all.onkeyup := handleKeyUp
+    ).render
+  }
+
+  class LolRxSet[T](
+      override val fetch: String => T,
+      override val inputTag: TypedTag[dom.html.Input]) extends LolRx[T,Set]  {
+    override val values: rx.Var[Set[T]] = rx.Var(Set.empty)
+    override def append(elem: T) = values() = values() + elem
+    def pop() = values() = values() - values().last
+  }
+
+  class LolRxList[T](
+      override val fetch: String => T,
+      override val inputTag: TypedTag[dom.html.Input]) extends LolRx[T,List]  {
+    override val values: rx.Var[List[T]] = rx.Var(List.empty)
+    override def append(elem: T) = values() = elem :: values()
+    def pop() = values() = values().tail
+  }
+
+  object LolRx {
+    def  set[T](inputTag: TypedTag[dom.html.Input])(fetch: String => T) = new LolRxSet[T](fetch,inputTag)
+    def list[T](inputTag: TypedTag[dom.html.Input])(fetch: String => T) = new LolRxList[T](fetch,inputTag)
   }
 }
