@@ -87,10 +87,12 @@ object Implicits {
   object CheckboxBool {
     def apply(mods: Modifier *) = new CheckboxBool(mods:_*)
   }
+
   class CheckboxBoolBinder extends Binder[CheckboxBool,Boolean] {
     override def bind(inp: CheckboxBool, value: Boolean): Unit = inp.input.checked = value
     override def unbind(inp: CheckboxBool): Try[Boolean] = Try { inp.input.checked }
   }
+
   implicit def implicitCheckboxBoolBinder: Binder[CheckboxBool,Boolean] = new CheckboxBoolBinder
 
   //Binders for Set[T] <=> Checkbox elements
