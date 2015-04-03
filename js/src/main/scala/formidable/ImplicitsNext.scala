@@ -42,6 +42,7 @@ object ImplicitsNext {
     }
   }
 
+
   //Binder for HTMLInputElement
   implicit object InputBindRx extends BindRx[html.Input,String] with InputRxShove[String] {
 
@@ -60,6 +61,25 @@ object ImplicitsNext {
     }
   }
 
+  class OptionInputRx[T](make: String => Option[T]) extends BindRx[dom.html.Input,Option[T]] {
+    def bind(inp: dom.html.Input, value: Option[T]): Unit = {
+      inp.value = value.map(_.value.toString).getOrElse("")
+      ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)).recalc()
+    }
+
+    def unbind(inp: dom.html.Input): rx.Rx[Try[Option[T]]] = {
+      val result = ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)))
+      inp.onkeyup = (ev: dom.KeyboardEvent) => {
+        println("InputBindRx -- RECALC!")
+        result.recalc()
+      }
+      result
+    }
+  }
+
+  object InputRx {
+    def option[T](make: String => Option[T]) = new OptionInputRx[T](make)
+  }
   //Binder for HTMLInputElement
   class InputNumericBindRx[N: Numeric](make: String => Try[N]) extends BindRx[html.Input,N] with InputRxShove[N]{
 
