@@ -20,6 +20,16 @@ object ImplicitsNext {
 
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
+  implicit class PimpFwat[T](mahrx: FormidableRx[T]) {
+    def mapped[U](func: T => U, unfunc: U => T): FormidableRx[U] = new FormidableRx[U] {
+      //override def unbuild() = ???
+      def current: rx.Rx[Try[U]] = rx.Rx { mahrx.current().map(func) }
+      def unbuild(inp: U): Unit = {
+        mahrx.unbuild(unfunc(inp))
+      }
+    }
+  }
+
   class BindVarRx[T]() extends BindRx[rx.Var[T],T] {
     override def bind(inp: rx.Var[T], value: T) = inp() = value
     override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { inp() ; inp.toTry }
@@ -27,8 +37,8 @@ object ImplicitsNext {
   implicit def implicitBindVarRx[Target] = new BindVarRx[Target]()
 
   //Helper trait to shove Rx[Try[T]] into a dom.html.Input
-  trait InputRxShove[T] {
-    protected def ensureShove(inp: html.Input)(make: String => Try[T]): rx.Rx[Try[T]] = {
+  trait InputRxDynamic[T] {
+    protected def bindDynamic(inp: html.Input)(make: String => Try[T]): rx.Rx[Try[T]] = {
       if(inp.asInstanceOf[js.Dynamic].selectDynamic("_inp_rx") == js.undefined) {
         val result: rx.Rx[Try[T]] = rx.Rx {
           println("InputBindRx -- I AM WORRIED THIS LEAKS!")
@@ -43,15 +53,15 @@ object ImplicitsNext {
   }
 
   //Binder for HTMLInputElement
-  implicit object InputBindRx extends BindRx[html.Input,String] with InputRxShove[String] {
+  implicit object InputBindRx extends BindRx[html.Input,String] with InputRxDynamic[String] {
 
     def bind(inp: html.Input, value: String): Unit = {
       inp.value = value
-      ensureShove(inp)(s => Success(inp.value)).recalc()
+      bindDynamic(inp)(s => Success(inp.value)).recalc()
     }
 
     def unbind(inp: html.Input): rx.Rx[Try[String]] = {
-      val result = ensureShove(inp)(s => Success(inp.value))
+      val result = bindDynamic(inp)(s => Success(inp.value))
       inp.onkeyup = (ev:dom.KeyboardEvent) => {
         println("InputBindRx -- RECALC!")
         result.recalc()
@@ -61,15 +71,15 @@ object ImplicitsNext {
   }
 
   //Binder for HTMLInputElement
-  class InputNumericBindRx[N: Numeric](make: String => Try[N]) extends BindRx[html.Input,N] with InputRxShove[N]{
+  class InputNumericBindRx[N: Numeric](make: String => Try[N]) extends BindRx[html.Input,N] with InputRxDynamic[N]{
 
     override def bind(inp: html.Input, value: N): Unit = {
       inp.value = value.toString
-      ensureShove(inp)(make).recalc()
+      bindDynamic(inp)(make).recalc()
     }
 
     override def unbind(inp: html.Input): rx.Rx[Try[N]] = {
-      val result = ensureShove(inp)(make)
+      val result = bindDynamic(inp)(make)
       inp.onkeyup = (ev:dom.KeyboardEvent) => {
         println("InputBindRx -- RECALC!")
         result.recalc()
@@ -104,6 +114,7 @@ object ImplicitsNext {
 
   object SelectionRx {
     def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionRx[T](selectMods)(options:_*)
+    //def mapped[T,U](func: T => U, selectMods: Modifier*)(options: Opt[T] *) = new SelectionRx[T](selectMods)(options:_*).mapped(func)
   }
 
   //Binders for T <=> Radio elements
