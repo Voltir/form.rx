@@ -20,15 +20,15 @@ object ImplicitsNext {
 
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
-  implicit class PimpFwat[T](mahrx: FormidableRx[T]) {
-    def mapped[U](func: T => U, unfunc: U => T): FormidableRx[U] = new FormidableRx[U] {
-      //override def unbuild() = ???
-      def current: rx.Rx[Try[U]] = rx.Rx { mahrx.current().map(func) }
-      def unbuild(inp: U): Unit = {
-        mahrx.unbuild(unfunc(inp))
-      }
-    }
-  }
+//  implicit class PimpFwat[T](mahrx: FormidableRx[T]) {
+//    def mapped[U](func: T => U, unfunc: U => T): FormidableRx[U] = new FormidableRx[U] {
+//      //override def unbuild() = ???
+//      def current: rx.Rx[Try[U]] = rx.Rx { mahrx.current().map(func) }
+//      def unbuild(inp: U): Unit = {
+//        mahrx.unbuild(unfunc(inp))
+//      }
+//    }
+//  }
 
   class BindVarRx[T]() extends BindRx[rx.Var[T],T] {
     override def bind(inp: rx.Var[T], value: T) = inp() = value
@@ -56,7 +56,7 @@ object ImplicitsNext {
   //Binder for HTMLInputElement
   implicit object InputBindRx extends BindRx[html.Input,String] with InputRxDynamic[String] {
 
-    def bind(inp: html.Input, value: String): Unit = {
+    def bind(inp: dom.html.Input, value: String): Unit = {
       inp.value = value
       bindDynamic(inp)(s => Success(inp.value)).recalc()
     }
@@ -71,25 +71,26 @@ object ImplicitsNext {
     }
   }
 
-  class OptionInputRx[T](make: String => Option[T]) extends BindRx[dom.html.Input,Option[T]] {
-    def bind(inp: dom.html.Input, value: Option[T]): Unit = {
-      inp.value = value.map(_.value.toString).getOrElse("")
-      ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)).recalc()
-    }
+//  class OptionInputRx[T](make: String => Option[T]) extends BindRx[dom.html.Input,Option[T]] {
+//    def bind(inp: dom.html.Input, value: Option[T]): Unit = {
+//      inp.value = value.map(_.value.toString).getOrElse("")
+//      ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)).recalc()
+//    }
+//
+//    def unbind(inp: dom.html.Input): rx.Rx[Try[Option[T]]] = {
+//      val result = ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)))
+//      inp.onkeyup = (ev: dom.KeyboardEvent) => {
+//        println("InputBindRx -- RECALC!")
+//        result.recalc()
+//      }
+//      result
+//    }
+//  }
+//
+//  object InputRx {
+//    def option[T](make: String => Option[T]) = new OptionInputRx[T](make)
+//  }
 
-    def unbind(inp: dom.html.Input): rx.Rx[Try[Option[T]]] = {
-      val result = ensureShove(inp)(s => if(s == "") Success(None) else Try(make(s)))
-      inp.onkeyup = (ev: dom.KeyboardEvent) => {
-        println("InputBindRx -- RECALC!")
-        result.recalc()
-      }
-      result
-    }
-  }
-
-  object InputRx {
-    def option[T](make: String => Option[T]) = new OptionInputRx[T](make)
-  }
   //Binder for HTMLInputElement
   class InputNumericBindRx[N: Numeric](make: String => Try[N]) extends BindRx[html.Input,N] with InputRxDynamic[N]{
 
@@ -171,7 +172,12 @@ object ImplicitsNext {
       inp.input.checked = value
       ensureShove(inp.input).recalc()
     }
-    override def unbind(inp: CheckboxBool): rx.Rx[Try[Boolean]] = ensureShove(inp.input)
+
+    override def unbind(inp: CheckboxBool): rx.Rx[Try[Boolean]] = {
+      val result = ensureShove(inp.input)
+      inp.input.onchange = (ev:dom.Event) => result.recalc()
+      result
+    }
   }
 
   //BindRx for Set[T]/List[T] <=> Checkbox elements
@@ -198,78 +204,4 @@ object ImplicitsNext {
     def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBaseRx[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
   }
 
-
-
-
-  //OMG THINK BETTER
-  trait LolRx[T, Container[_] <: Traversable[_]] extends FormidableRx[Container[T]] {
-    import KeyboardPolyfill._
-
-    val values: rx.Var[Container[T]]
-
-    lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try { values() } }
-
-    override def unbuild(newValues: Container[T]) = {
-      values() = newValues
-    }
-
-    def pop(): Unit
-
-    protected val inputTag: TypedTag[dom.html.Input]
-
-    val fetch: String => T
-
-    protected def append(elem: T): Unit
-
-    private def handleKeyUp: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
-      (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
-        val key = evt.polyfill()._1
-
-        if(key == KCode.Comma) {
-          val elem = fetch(jsThis.value.take(jsThis.value.size - 1))
-          jsThis.value = ""
-          append(elem)
-          values.recalc()
-        }
-
-        if(key == KCode.Enter) {
-          val elem = fetch(jsThis.value)
-          jsThis.value = ""
-          append(elem)
-          values.recalc()
-        }
-
-        if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
-          pop()
-          values.recalc()
-        }
-      }
-    }
-
-    lazy val input: dom.html.Input = inputTag(
-      `type`:="text",
-      scalatags.JsDom.all.onkeyup := handleKeyUp
-    ).render
-  }
-
-  class LolRxSet[T](
-      override val fetch: String => T,
-      override val inputTag: TypedTag[dom.html.Input]) extends LolRx[T,Set]  {
-    override val values: rx.Var[Set[T]] = rx.Var(Set.empty)
-    override def append(elem: T) = values() = values() + elem
-    def pop() = values() = values() - values().last
-  }
-
-  class LolRxList[T](
-      override val fetch: String => T,
-      override val inputTag: TypedTag[dom.html.Input]) extends LolRx[T,List]  {
-    override val values: rx.Var[List[T]] = rx.Var(List.empty)
-    override def append(elem: T) = values() = elem :: values()
-    def pop() = values() = values().tail
-  }
-
-  object LolRx {
-    def  set[T](inputTag: TypedTag[dom.html.Input])(fetch: String => T) = new LolRxSet[T](fetch,inputTag)
-    def list[T](inputTag: TypedTag[dom.html.Input])(fetch: String => T) = new LolRxList[T](fetch,inputTag)
-  }
 }
