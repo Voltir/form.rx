@@ -1,11 +1,25 @@
 package formidable.implicits
 
 
-import formidable.FormidableRx
+import formidable.{BindRx, FormidableRx}
 import scala.util.Try
 import rx._
 
 trait Common {
+
+  //Implicit for general FormidableRx
+  class FormidableBindRx[F <: FormidableRx[Target],Target] extends BindRx[F,Target] {
+    override def bind(inp: F, value: Target) = inp.unbuild(value)
+    override def unbind(inp: F): rx.Rx[Try[Target]] = inp.current
+  }
+  implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
+
+  //Implicit for binding arbitrary vars
+  class BindVarRx[T]() extends BindRx[rx.Var[T],T] {
+    override def bind(inp: rx.Var[T], value: T) = inp() = value
+    override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { Try(inp()) }
+  }
+  implicit def implicitBindVarRx[Target]: BindRx[rx.Var[Target],Target] = new BindVarRx[Target]()
 
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
   class RxLayoutList[T, Layout <: FormidableRx[T]](make: () => Layout) extends FormidableRx[List[T]] {
