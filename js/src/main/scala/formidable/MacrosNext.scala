@@ -55,16 +55,6 @@ object MacrosNext {
       }
     }
 
-//    c.Expr[Layout with Formidable[Target]](q"""
-//      new $layoutTpe with FormidableRx[$targetTpe] {
-//        def unbuild(inp: $targetTpe): Unit = {
-//          ${bindN(fields.size)}
-//        }
-//        def build(): Try[$targetTpe] = Try {
-//          $companion.apply(..$unmagic)
-//        }
-//      }
-//    """)
     println("GENERATE OMG DONE")
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {

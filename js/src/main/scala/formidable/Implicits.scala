@@ -13,14 +13,14 @@ object Implicits {
 
   implicit def implicitFormidableBinder[F <: Formidable[Target],Target]: Binder[F,Target] = new FormidableBinder[F,Target]
 
-  //Binder for Ignored fields
-  class Ignored[T](val default: T) extends Formidable[T] {
-    override def unbuild(value: T): Unit = Unit
-    override def build(): Try[T] = Success(default)
-  }
-  object Ignored {
-    def apply[T](default: T) = new Ignored(default)
-  }
+//  //Binder for Ignored fields
+//  class Ignored[T](val default: T) extends Formidable[T] {
+//    override def unbuild(value: T): Unit = Unit
+//    override def build(): Try[T] = Success(default)
+//  }
+//  object Ignored {
+//    def apply[T](default: T) = new Ignored(default)
+//  }
 
   //Binder for HTMLInputElement
   implicit object InputBinder extends Binder[html.Input,String] {

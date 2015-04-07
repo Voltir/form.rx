@@ -2,10 +2,20 @@ package formidable.implicits
 
 
 import formidable.{BindRx, FormidableRx}
-import scala.util.Try
+import scala.util.{Success, Try}
 import rx._
 
 trait Common {
+
+  //Binder for Ignored fields
+  class Ignored[T](val default: T) extends FormidableRx[T] {
+    override def current: Rx[Try[T]] = Rx { Success(default) }
+    override def unbuild(inp: T): Unit = Unit
+  }
+
+  object Ignored {
+    def apply[T](default: T) = new Ignored(default)
+  }
 
   //Implicit for general FormidableRx
   class FormidableBindRx[F <: FormidableRx[Target],Target] extends BindRx[F,Target] {
