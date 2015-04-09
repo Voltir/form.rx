@@ -115,17 +115,17 @@ trait Input {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
         val key = evt.polyfill()._1
 
-        def doUpdate() = {
-          val elem = fromString(jsThis.value.take(jsThis.value.size - 1))
+        def doUpdate(meh: Int) = {
+          val elem = fromString(jsThis.value.take(jsThis.value.size - meh))
           val layout = newLayout(elem)
           jsThis.value = ""
           values.now.append(layout)
           values.recalc()
         }
 
-        if(key == KCode.Comma) doUpdate()
+        if(key == KCode.Comma) doUpdate(1)
 
-        if(key == KCode.Enter) doUpdate()
+        if(key == KCode.Enter) doUpdate(0)
 
         if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
           pop()
@@ -160,19 +160,22 @@ trait Input {
 
     protected def handleKeyUp: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
+
         val key = evt.polyfill()._1
 
-        def doUpdate() = {
-          val elem = fromString(jsThis.value.take(jsThis.value.size - 1))
-          val layout = newLayout(elem)
-          jsThis.value = ""
-          values.now += layout
-          values.recalc()
+        def doUpdate(meh: Int) = {
+          val elem = fromString(jsThis.value.take(jsThis.value.size - meh))
+          if(!current.now.toOption.exists(_.contains(elem))) {
+            val layout = newLayout(elem)
+            values.now += layout
+            jsThis.value = ""
+            values.recalc()
+          }
         }
 
-        if(key == KCode.Comma) doUpdate()
+        if(key == KCode.Comma) doUpdate(1)
 
-        if(key == KCode.Enter) doUpdate()
+        if(key == KCode.Enter) doUpdate(0)
 
         if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
           pop()
