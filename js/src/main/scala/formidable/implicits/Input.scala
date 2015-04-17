@@ -111,7 +111,7 @@ trait Input {
       values() = newValues.map { t => newLayout(t)}.toBuffer
     }
 
-    protected def handleKeyUp: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
+    protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
         val key = evt.polyfill()._1
 
@@ -135,7 +135,7 @@ trait Input {
 
     lazy val input: dom.html.Input = inputTag(
       `type`:="text",
-      scalatags.JsDom.all.onkeyup := handleKeyUp
+      scalatags.JsDom.all.onkeydown := handleKeyInput
     ).render
   }
 
@@ -158,7 +158,7 @@ trait Input {
       values() = mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*)
     }
 
-    protected def handleKeyUp: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
+    protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
 
         val key = evt.polyfill()._1
@@ -185,7 +185,7 @@ trait Input {
 
     lazy val input: dom.html.Input = inputTag(
       `type`:="text",
-      scalatags.JsDom.all.onkeyup := handleKeyUp
+      scalatags.JsDom.all.onkeydown := handleKeyInput
     ).render
   }
 
