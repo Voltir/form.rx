@@ -8,8 +8,8 @@ object Build extends sbt.Build {
 
   val cross = crossProject.in(file(".")).settings(
     organization := "com.stabletech",
-    version := "0.0.4-SNAPSHOT",
-    scalaVersion := "2.11.5",
+    version := "0.0.5-SNAPSHOT",
+    scalaVersion := "2.11.6",
     name := "formidable",
     autoCompilerPlugins := true,
     addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2"),
@@ -31,6 +31,7 @@ object Build extends sbt.Build {
       "Github Pages", new File("/home/nick/publish/formidable"))
     )
   ).jsSettings(
+    preLinkJSEnv := PhantomJSEnv().value,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom
     )
@@ -44,7 +45,7 @@ object Build extends sbt.Build {
   
   object Versions {
     val scalajsDom = "0.8.0"
-    val scalatags = "0.5.0"
+    val scalatags = "0.5.1"
     val scalarx = "0.2.8"
     val utest = "0.3.1"
   }

@@ -39,11 +39,13 @@ trait TextArea {
 
     def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
       val result = bindDynamic(inp)(s => builder.parse(inp.value))
-      inp.onkeyup = (ev:dom.KeyboardEvent) => {
-        println("TextArea -- RECALC!")
-        result.recalc()
-      }
+      inp.onkeyup = (ev:dom.KeyboardEvent) => result.recalc()
       result
+    }
+
+    def reset(inp: dom.html.TextArea): Unit = {
+      inp.value = ""
+      bindDynamic(inp)(s => builder.parse(inp.value)).recalc()
     }
   }
 
@@ -62,11 +64,12 @@ trait TextArea {
     def unbind(inp: dom.html.TextArea): rx.Rx[Try[Option[Target]]] = {
       val result = bindDynamic(inp)(s => Success(builder.parse(inp.value).toOption))
       inp.onkeyup = (ev:dom.KeyboardEvent) => {
-        println("TextArea Option -- RECALC!")
         result.recalc()
       }
       result
     }
+
+    override def reset(inp: dom.html.TextArea): Unit = bind(inp,None)
   }
 
   implicit def textAreaOptionBindRx[Target: StringConstructable]: BindRx[dom.html.TextArea, Option[Target]] = new TextAreaOptionBindRx[Target]

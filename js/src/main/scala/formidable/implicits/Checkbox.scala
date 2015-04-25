@@ -9,19 +9,26 @@ import scalatags.JsDom.all._
 trait Checkbox {
 
   //Basic checkbox as a bool
-  class CheckboxBoolRx(mods: Modifier *) extends FormidableRx[Boolean] {
+  class CheckboxBoolRx(default: Boolean)(mods: Modifier *) extends FormidableRx[Boolean] {
     val input = scalatags.JsDom.all.input(`type`:="checkbox", mods).render
     val current: rx.Rx[Try[Boolean]] = rx.Rx { Try(input.checked)}
 
-    override def unbuild(inp: Boolean): Unit = {
+    override def set(inp: Boolean): Unit = {
       input.checked = inp
       current.recalc()
     }
+
+    override def reset(): Unit = set(default)
+
     input.onchange = { (_:Event) => current.recalc() }
+
   }
 
   //BindRx for Set[T]/List[T] <=> Checkbox elements
-  class CheckboxBaseRx[T, Container[_]](name: String)(buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)(checks: Chk[T] *) extends FormidableRx[Container[T]] {
+  class CheckboxBaseRx[T, Container[_]]
+      (name: String)
+      (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
+      (checks: Chk[T] *) extends FormidableRx[Container[T]] {
     val checkboxes = checks.map { c =>
       c.input.name = name
       c.input.onchange = { (_:Event) => current.recalc() }
@@ -31,10 +38,15 @@ trait Checkbox {
       buildFrom(checks.filter(_.input.checked).map(_.value))
     }}
 
-    override def unbuild(values: Container[T]) = {
+    override def set(values: Container[T]) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
+      current.recalc()
+    }
+
+    override def reset(): Unit = {
+      checks.foreach { _.input.checked = false }
       current.recalc()
     }
   }

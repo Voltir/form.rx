@@ -15,7 +15,8 @@ object Formidable {
 
 trait FormidableRx[Target] {
   def current: rx.Rx[Try[Target]]
-  def unbuild(inp: Target): Unit
+  def set(inp: Target): Unit
+  def reset(): Unit
 }
 
 object FormidableRx {

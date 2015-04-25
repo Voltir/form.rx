@@ -45,6 +45,11 @@ trait Input {
     def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(s => builder.parse(inp.value))
     }
+
+    def reset(inp: dom.html.Input): Unit = {
+      inp.value = ""
+      bindDynamic(inp)(s => builder.parse(inp.value)).recalc()
+    }
   }
 
   implicit def inputBindRx[Target: StringConstructable]: BindRx[dom.html.Input,Target] = new InputBindRx[Target]
@@ -54,15 +59,17 @@ trait Input {
     with InputRxDynamic[Option[Target]] {
     val builder = implicitly[StringConstructable[Target]]
 
-    def bind(inp: dom.html.Input, value: Option[Target]): Unit = {
+    override def bind(inp: dom.html.Input, value: Option[Target]): Unit = {
       val result = bindDynamic(inp)(s => Success(builder.parse(inp.value).toOption))
       inp.value = value.map(builder.asString).getOrElse("")
       result.recalc()
     }
 
-    def unbind(inp: dom.html.Input): rx.Rx[Try[Option[Target]]] = {
+    override def unbind(inp: dom.html.Input): rx.Rx[Try[Option[Target]]] = {
       bindDynamic(inp)(s => Success(builder.parse(inp.value).toOption))
     }
+
+    override def reset(inp: dom.html.Input) = bind(inp,None)
   }
 
   implicit def inputOptionBindRx[Target: StringConstructable]: BindRx[dom.html.Input, Option[Target]] = new InputOptionBindRx[Target]
@@ -106,10 +113,12 @@ trait Input {
       values().map(_.current().get).toList
     }}
 
-    override def unbuild(newValues: List[T]) = {
+    override def set(newValues: List[T]) = {
       values.now.foreach { r => r.current.kill() }
       values() = newValues.map { t => newLayout(t)}.toBuffer
     }
+
+    override def reset(): Unit = set(List.empty)
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
@@ -153,10 +162,12 @@ trait Input {
       values().map(_.current().get).toSet
     }}
 
-    override def unbuild(newValues: Set[T]) = {
+    override def set(newValues: Set[T]) = {
       values.now.foreach { r => r.current.kill() }
       values() = mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*)
     }
+
+    override def reset(): Unit = Set.empty
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
@@ -192,7 +203,7 @@ trait Input {
 
   class ValidateNext[T: StringConstructable](mods: Modifier*)(rxMods: (rx.Var[Try[T]] => Modifier)*) extends FormidableRx[T] {
 
-    val _current: rx.Var[Try[T]] = rx.Var(Failure(Unitialized))
+    private val _current: rx.Var[Try[T]] = rx.Var(Failure(Unitialized))
 
     private val builder = implicitly[StringConstructable[T]]
 
@@ -205,13 +216,17 @@ trait Input {
       rxMods.map(_(_current))
     ).render
 
-    override def unbuild(inp: T) = {
-      println("I WANT TO UNBUILD VALIDATE NEXT ----- " + inp)
+    override def set(inp: T) = {
       input.value = builder.asString(inp)
       _current() = Success(inp)
     }
 
+    override def reset(): Unit = {
+      input.value = ""
+      _current() = Failure(Unitialized)
+    }
   }
+
   object InputRx {
     //def autocomplete = ???
     def validate[T: StringConstructable](mods: Modifier *)= new ValidateNext[T](mods)()

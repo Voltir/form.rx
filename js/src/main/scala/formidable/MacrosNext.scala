@@ -16,6 +16,7 @@ object MacrosNext {
     println("GENERATE START")
     val targetTpe = weakTypeTag[Target].tpe
     val layoutTpe = weakTypeTag[Layout].tpe
+    targetTpe
 
     val fields = targetTpe.decls.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
@@ -44,8 +45,25 @@ object MacrosNext {
       q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor)().get"
     }
 
+    val resetMagic: List[c.Tree] = fields.map { case field =>
+      println("GENERATE RESET MAGIC: " + field)
+      val accessor = layoutAccessors.find(_.name == field.name).get
+      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].reset(this.$accessor)"
+    }
+
     def bindN(n: Int) = {
       println("GENERATE BINDN")
+      if(n > 0 && n < 23) {
+        val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
+        q"$companion.unapply(inp).map { case (..$vars) => $magic }"
+      }
+      else {
+        c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
+      }
+    }
+
+    def resetN(n: Int) = {
+      println("GENERATE RESETN")
       if(n > 0 && n < 23) {
         val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
         q"$companion.unapply(inp).map { case (..$vars) => $magic }"
@@ -63,9 +81,11 @@ object MacrosNext {
             $companion.apply(..$unmagic)
           }
         }
-        def unbuild(inp: $targetTpe): Unit = {
+        def set(inp: $targetTpe): Unit = {
           ${bindN(fields.size)}
         }
+
+        def reset(): Unit = { ..$resetMagic }
       }
     """)
   }

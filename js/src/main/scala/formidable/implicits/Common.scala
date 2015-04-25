@@ -10,7 +10,8 @@ trait Common {
   //Binder for Ignored fields
   class Ignored[T](val default: T) extends FormidableRx[T] {
     override def current: Rx[Try[T]] = Rx { Success(default) }
-    override def unbuild(inp: T): Unit = Unit
+    override def set(inp: T): Unit = Unit
+    override def reset(): Unit = Unit
   }
 
   object Ignored {
@@ -19,18 +20,31 @@ trait Common {
 
   //Implicit for general FormidableRx
   class FormidableBindRx[F <: FormidableRx[Target],Target] extends BindRx[F,Target] {
-    override def bind(inp: F, value: Target) = inp.unbuild(value)
+    override def bind(inp: F, value: Target) = inp.set(value)
     override def unbind(inp: F): rx.Rx[Try[Target]] = inp.current
+    override def reset(inp: F): Unit = inp.reset()
   }
+
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
-  //Implicit for binding arbitrary vars
-  class BindVarRx[T]() extends BindRx[rx.Var[T],T] {
-    override def bind(inp: rx.Var[T], value: T) = inp() = value
-    override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { Try(inp()) }
-  }
-  implicit def implicitBindVarRx[Target]: BindRx[rx.Var[Target],Target] = new BindVarRx[Target]()
+//  //Implicit for binding arbitrary vars
+//  class BindVarRx[T] extends BindRx[rx.Var[T],T] {
+//    override def bind(inp: rx.Var[T], value: T) = inp() = value
+//    override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { Try(inp()) }
+//    override def reset(inp: rx.Var[T]): Unit = Unit
+//  }
+//  implicit def implicitBindVarRx[Target]: BindRx[rx.Var[Target],Target] = new BindVarRx[Target]
 
+  class FormidableVarRx[T](default: T) extends FormidableRx[T] {
+    val value = Var(default)
+    override def current = Rx { Try(value()) }
+    override def set(inp: T) = value() = inp
+    override def reset(): Unit = value() = default
+  }
+
+  object VarRx {
+    def apply[Target](default: Target) = new FormidableVarRx[Target](default)
+  }
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
   class RxLayoutList[T, Layout <: FormidableRx[T]](make: () => Layout) extends FormidableRx[List[T]] {
 
@@ -42,12 +56,16 @@ trait Common {
       }.toList
     }}
 
-    def unbuild(inp: List[T]): Unit = {
+    def set(inp: List[T]): Unit = {
       values() = inp.map { f =>
         val r = make()
-        r.unbuild(f)
+        r.set(f)
         r
       }.toBuffer
+    }
+
+    def reset(): Unit = {
+      values() = collection.mutable.Buffer.empty
     }
 
     def append(elem: Layout): Unit = {

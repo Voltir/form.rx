@@ -7,19 +7,22 @@ import scala.util.Try
 
 trait RadioRx {
   //Binders for T <=> Radio elements
-  class RadioRx[T](name: String)(val radios: Radio[T] *) extends FormidableRx[T] {
-    private val selected: rx.Var[T] = rx.Var(radios.head.value)
-    radios.foreach(_.input.name = name)
+  class RadioRx[T](name: String)(val head: Radio[T], val radios: Radio[T] *) extends FormidableRx[T] {
+    private val selected: rx.Var[T] = rx.Var(head.value)
+    private val _all = head :: radios.toList
+    _all.foreach(_.input.name = name)
 
     val current: rx.Rx[Try[T]] = rx.Rx { Try(selected()) }
 
-    def unbuild(value: T): Unit = radios.find(_.value == value).foreach { r =>
+    def set(value: T): Unit = _all.find(_.value == value).foreach { r =>
       r.input.checked = true
       selected() = r.value
     }
+
+    def reset(): Unit = selected() = head.value
   }
 
   object RadioRx {
-    def apply[T](name: String)(radios: Radio[T] *) = new RadioRx[T](name)(radios:_*)
+    def apply[T](name: String)(head: Radio[T], radios: Radio[T] *) = new RadioRx[T](name)(head,radios.toList:_*)
   }
 }
