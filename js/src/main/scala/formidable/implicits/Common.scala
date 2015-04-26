@@ -10,7 +10,7 @@ trait Common {
   //Binder for Ignored fields
   class Ignored[T](val default: T) extends FormidableRx[T] {
     override def current: Rx[Try[T]] = Rx { Success(default) }
-    override def set(inp: T): Unit = Unit
+    override def set(inp: T, propagate: Boolean): Unit = Unit
     override def reset(): Unit = Unit
   }
 
@@ -20,25 +20,16 @@ trait Common {
 
   //Implicit for general FormidableRx
   class FormidableBindRx[F <: FormidableRx[Target],Target] extends BindRx[F,Target] {
-    override def bind(inp: F, value: Target) = inp.set(value)
+    override def bind(inp: F, value: Target, propagate: Boolean) = inp.set(value, propagate)
     override def unbind(inp: F): rx.Rx[Try[Target]] = inp.current
     override def reset(inp: F): Unit = inp.reset()
   }
-
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
-
-//  //Implicit for binding arbitrary vars
-//  class BindVarRx[T] extends BindRx[rx.Var[T],T] {
-//    override def bind(inp: rx.Var[T], value: T) = inp() = value
-//    override def unbind(inp: rx.Var[T]): rx.Rx[Try[T]] = rx.Rx { Try(inp()) }
-//    override def reset(inp: rx.Var[T]): Unit = Unit
-//  }
-//  implicit def implicitBindVarRx[Target]: BindRx[rx.Var[Target],Target] = new BindVarRx[Target]
 
   class FormidableVarRx[T](default: T) extends FormidableRx[T] {
     val value = Var(default)
     override def current = Rx { Try(value()) }
-    override def set(inp: T) = value() = inp
+    override def set(inp: T, propagate: Boolean) = if(propagate) value.update(inp) else value.updateSilent(inp)
     override def reset(): Unit = value() = default
   }
 
@@ -56,15 +47,16 @@ trait Common {
       }.toList
     }}
 
-    def set(inp: List[T]): Unit = {
-      values() = inp.map { f =>
+    override def set(inp: List[T], propagate: Boolean): Unit = {
+      values.updateSilent(inp.map { f =>
         val r = make()
         r.set(f)
         r
-      }.toBuffer
+      }.toBuffer)
+      if(propagate) values.propagate()
     }
 
-    def reset(): Unit = {
+    override def reset(): Unit = {
       values() = collection.mutable.Buffer.empty
     }
 

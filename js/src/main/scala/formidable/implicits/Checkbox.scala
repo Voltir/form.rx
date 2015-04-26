@@ -13,15 +13,14 @@ trait Checkbox {
     val input = scalatags.JsDom.all.input(`type`:="checkbox", mods).render
     val current: rx.Rx[Try[Boolean]] = rx.Rx { Try(input.checked)}
 
-    override def set(inp: Boolean): Unit = {
+    override def set(inp: Boolean, propagate: Boolean): Unit = {
       input.checked = inp
-      current.recalc()
+      if(propagate) current.recalc()
     }
 
     override def reset(): Unit = set(default)
 
     input.onchange = { (_:Event) => current.recalc() }
-
   }
 
   //BindRx for Set[T]/List[T] <=> Checkbox elements
@@ -34,15 +33,15 @@ trait Checkbox {
       c.input.onchange = { (_:Event) => current.recalc() }
       c }.toBuffer
 
-    lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try {
+    override lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try {
       buildFrom(checks.filter(_.input.checked).map(_.value))
     }}
 
-    override def set(values: Container[T]) = {
+    override def set(values: Container[T], propagate: Boolean) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
-      current.recalc()
+      if(propagate) current.recalc()
     }
 
     override def reset(): Unit = {

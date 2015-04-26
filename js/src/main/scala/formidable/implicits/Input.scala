@@ -4,9 +4,11 @@ import formidable.Typeclasses.StringConstructable
 import formidable.{BindRx, KCode, KeyboardPolyfill, FormidableRx}
 import org.scalajs.dom
 import org.scalajs.dom.html
+import rx._
 
 import scala.collection.generic.CanBuildFrom
 import scala.scalajs.js
+import scala.scalajs.js.UndefOr
 import scala.util.{Failure, Success, Try}
 import scalatags.JsDom.TypedTag
 import scalatags.JsDom.all._
@@ -15,18 +17,17 @@ import KeyboardPolyfill._
 
 trait Input {
   //Helper trait to shove Rx[Try[T]] into a dom.html.Input
-
-  case object Unitialized extends Throwable("Unitialized Field")
+  case object Uninitialized extends Throwable("Uninitialized Field")
 
   trait InputRxDynamic[T] {
-    protected def bindDynamic(inp: html.Input)(make: String => Try[T]): rx.Rx[Try[T]] = {
-      if(inp.asInstanceOf[js.Dynamic].selectDynamic("_inp_rx") == js.undefined) {
-        val result: rx.Rx[Try[T]] = rx.Rx { make(inp.value) }
-        inp.onkeyup = (ev:dom.KeyboardEvent) => { result.recalc() }
-        inp.asInstanceOf[js.Dynamic].updateDynamic("_inp_rx")(result.asInstanceOf[js.Any])
+    private val KEY = "_inp_rx"
+    protected def bindDynamic(inp: html.Input)(make: String => Try[T]): Var[Try[T]] = {
+      val bound = inp.asInstanceOf[js.Dynamic].selectDynamic(KEY).asInstanceOf[UndefOr[Var[Try[T]]]]
+      bound.getOrElse {
+        val result: Var[Try[T]] = Var(make(inp.value))
+        inp.onkeyup = (ev:dom.KeyboardEvent) => result() = make(inp.value)
+        inp.asInstanceOf[js.Dynamic].updateDynamic(KEY)(result.asInstanceOf[js.Any])
         result
-      } else {
-        inp.asInstanceOf[js.Dynamic]._inp_rx.asInstanceOf[rx.Rx[Try[T]]]
       }
     }
   }
@@ -35,46 +36,36 @@ trait Input {
   class InputBindRx[Target: StringConstructable]
       extends BindRx[dom.html.Input,Target]
       with InputRxDynamic[Target] {
-    val builder = implicitly[StringConstructable[Target]]
+    
+    private val builder = implicitly[StringConstructable[Target]]
+    
+    private val make = (s: String) => builder.parse(s)
 
-    def bind(inp: dom.html.Input, value: Target): Unit = {
+    private def update(inp: dom.html.Input, propagate: Boolean): Unit = {
+      val dynamicVar = bindDynamic(inp)(make)
+      dynamicVar.updateSilent(make(inp.value))
+      if(propagate) dynamicVar.propagate()
+    }
+
+    def bind(inp: dom.html.Input, value: Target, propagate: Boolean): Unit = {
       inp.value = builder.asString(value)
-      bindDynamic(inp)(s => builder.parse(inp.value)).recalc()
+      update(inp,propagate)
     }
 
     def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
-      bindDynamic(inp)(s => builder.parse(inp.value))
+      bindDynamic(inp)(make)
     }
 
     def reset(inp: dom.html.Input): Unit = {
       inp.value = ""
-      bindDynamic(inp)(s => builder.parse(inp.value)).recalc()
+      update(inp,true)
     }
   }
 
   implicit def inputBindRx[Target: StringConstructable]: BindRx[dom.html.Input,Target] = new InputBindRx[Target]
 
-  class InputOptionBindRx[Target: StringConstructable]
-    extends BindRx[dom.html.Input,Option[Target]]
-    with InputRxDynamic[Option[Target]] {
-    val builder = implicitly[StringConstructable[Target]]
-
-    override def bind(inp: dom.html.Input, value: Option[Target]): Unit = {
-      val result = bindDynamic(inp)(s => Success(builder.parse(inp.value).toOption))
-      inp.value = value.map(builder.asString).getOrElse("")
-      result.recalc()
-    }
-
-    override def unbind(inp: dom.html.Input): rx.Rx[Try[Option[Target]]] = {
-      bindDynamic(inp)(s => Success(builder.parse(inp.value).toOption))
-    }
-
-    override def reset(inp: dom.html.Input) = bind(inp,None)
-  }
-
-  implicit def inputOptionBindRx[Target: StringConstructable]: BindRx[dom.html.Input, Option[Target]] = new InputOptionBindRx[Target]
-
-  implicit object IdentityStringConstrucatable extends StringConstructable[String] {
+  //Basic String Constructable Implicits
+  implicit object StringStringConstructable extends StringConstructable[String] {
     def asString(inp: String): String = inp
     def parse(txt: String): Try[String] = Success(txt)
   }
@@ -99,6 +90,18 @@ trait Input {
     def parse(txt: String): Try[Double] = Try(txt.toDouble)
   }
 
+  class OptStringConstructable[T: StringConstructable] extends StringConstructable[Option[T]] {
+    val builder = implicitly[StringConstructable[T]]
+    def asString(inp: Option[T]) = inp.map(builder.asString).getOrElse("")
+    def parse(txt: String): Try[Option[T]] = scala.util.Success {
+      if(txt.length == 0) None else builder.parse(txt).toOption
+    }
+  }
+
+  implicit def OptionStringConstructable[T: StringConstructable]: StringConstructable[Option[T]] = {
+    new OptStringConstructable[T]
+  }
+
   //For List of Things (ie Tag Like)
   class TextRxBufferList[T, Layout <: FormidableRx[T]]
       (val inputTag: TypedTag[dom.html.Input])
@@ -113,9 +116,10 @@ trait Input {
       values().map(_.current().get).toList
     }}
 
-    override def set(newValues: List[T]) = {
+    override def set(newValues: List[T], propagate: Boolean) = {
       values.now.foreach { r => r.current.kill() }
-      values() = newValues.map { t => newLayout(t)}.toBuffer
+      values.updateSilent(newValues.map { t => newLayout(t)}.toBuffer)
+      if(propagate) values.propagate()
     }
 
     override def reset(): Unit = set(List.empty)
@@ -162,9 +166,10 @@ trait Input {
       values().map(_.current().get).toSet
     }}
 
-    override def set(newValues: Set[T]) = {
+    override def set(newValues: Set[T], propagate: Boolean) = {
       values.now.foreach { r => r.current.kill() }
-      values() = mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*)
+      values.updateSilent(mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*))
+      if(propagate) values.propagate()
     }
 
     override def reset(): Unit = Set.empty
@@ -203,7 +208,7 @@ trait Input {
 
   class ValidateNext[T: StringConstructable](mods: Modifier*)(rxMods: (rx.Var[Try[T]] => Modifier)*) extends FormidableRx[T] {
 
-    private val _current: rx.Var[Try[T]] = rx.Var(Failure(Unitialized))
+    private val _current: rx.Var[Try[T]] = rx.Var(Failure(Uninitialized))
 
     private val builder = implicitly[StringConstructable[T]]
 
@@ -216,21 +221,24 @@ trait Input {
       rxMods.map(_(_current))
     ).render
 
-    override def set(inp: T) = {
+    override def set(inp: T, propagate: Boolean) = {
       input.value = builder.asString(inp)
-      _current() = Success(inp)
+      _current.updateSilent(Success(inp))
+      if(propagate) {
+        _current.recalc()
+      }
     }
 
     override def reset(): Unit = {
       input.value = ""
-      _current() = Failure(Unitialized)
+      _current() = Failure(Uninitialized)
     }
   }
 
   object InputRx {
     //def autocomplete = ???
     def validate[T: StringConstructable](mods: Modifier *)= new ValidateNext[T](mods)()
-    def  set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: T => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
+    def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: T => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
     def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: T => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }
 

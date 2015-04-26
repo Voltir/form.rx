@@ -13,10 +13,8 @@ object MacrosNext {
 
   def generate[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with FormidableRx[Target]] = {
     import c.universe._
-    println("GENERATE START")
     val targetTpe = weakTypeTag[Target].tpe
     val layoutTpe = weakTypeTag[Layout].tpe
-    targetTpe
 
     val fields = targetTpe.decls.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
@@ -32,27 +30,23 @@ object MacrosNext {
 
     val companion = getCompanion(c)(targetTpe)
 
-    println("GENERATE AAAAA")
     val magic: List[c.Tree] = fields.zipWithIndex.map { case (field,idx) =>
       val term = TermName(s"a$idx")
       val accessor = layoutAccessors.find(_.name == field.name).get
-      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term)"
+      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term,false)"
     }
 
-    val unmagic: List[c.Tree] = fields.map { case field =>
-      println("GENERATE UNMAGIC: " + field)
+    val unmagic: List[c.Tree] = fields.zipWithIndex.map { case (field,i) =>
       val accessor = layoutAccessors.find(_.name == field.name).get
-      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor)().get"
+      fq"${TermName(s"a$i")} <- implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].unbind(this.$accessor)()"
     }
 
     val resetMagic: List[c.Tree] = fields.map { case field =>
-      println("GENERATE RESET MAGIC: " + field)
       val accessor = layoutAccessors.find(_.name == field.name).get
       q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].reset(this.$accessor)"
     }
 
     def bindN(n: Int) = {
-      println("GENERATE BINDN")
       if(n > 0 && n < 23) {
         val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
         q"$companion.unapply(inp).map { case (..$vars) => $magic }"
@@ -63,7 +57,6 @@ object MacrosNext {
     }
 
     def resetN(n: Int) = {
-      println("GENERATE RESETN")
       if(n > 0 && n < 23) {
         val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
         q"$companion.unapply(inp).map { case (..$vars) => $magic }"
@@ -73,16 +66,18 @@ object MacrosNext {
       }
     }
 
-    println("GENERATE OMG DONE")
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
+
         val current: rx.Rx[Try[$targetTpe]] = rx.Rx {
-          Try {
-            $companion.apply(..$unmagic)
+          for(..$unmagic) yield {
+            $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
           }
         }
-        def set(inp: $targetTpe): Unit = {
+
+        override def set(inp: $targetTpe, propagate: Boolean): Unit = {
           ${bindN(fields.size)}
+          if(propagate) current.recalc()
         }
 
         def reset(): Unit = { ..$resetMagic }

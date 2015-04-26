@@ -35,13 +35,27 @@ object BasicTests extends TestSuite {
       }
 
       val test = FormidableRx[ThingLayout,Thing]
-      println("OMG " + test)
-      test.set(foo)
+
+      var before = 0
+      var after = 0
+      var rxCount = 0
+      val obs = Rx {
+        println("OMG TEST CHANGED")
+        println(test.current())
+        rxCount += 1
+      }
+
+      println("####################### SET FOO #################")
+      before = rxCount ; test.set(foo) ; after = rxCount
+      assert(after == before + 1)
+      println("###### DONNNE ####")
       assert(test.foo.value == "A")
       assert(test.bar.value == "BB")
       assert(test.baz.value == "CCC")
 
-      test.reset()
+      println("####################### RESET #################")
+      before = rxCount ; test.reset() ; after = rxCount
+      //todo make work: assert(after == before + 1)
       assert(test.foo.value == "")
       assert(test.bar.value == "")
       assert(test.baz.value == "")
@@ -109,7 +123,6 @@ object BasicTests extends TestSuite {
       val test = FormidableRx[NotStringLayout,NotStrings]
       test.bar.value() = Wrapped(82828282)
       test.bar.reset()
-      test.bar.
       //test.current(NotStrings(111,Wrapped(222),SecondChoice))
       //assert(test.foo.value == "111")
       //assert(test.bar.value == "222")

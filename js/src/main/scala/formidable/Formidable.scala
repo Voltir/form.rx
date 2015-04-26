@@ -1,6 +1,5 @@
 package formidable
 
-
 import scala.language.experimental.macros
 import scala.util.Try
 
@@ -15,7 +14,7 @@ object Formidable {
 
 trait FormidableRx[Target] {
   def current: rx.Rx[Try[Target]]
-  def set(inp: Target): Unit
+  def set(inp: Target, propagate: Boolean = true): Unit
   def reset(): Unit
 }
 

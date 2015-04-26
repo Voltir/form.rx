@@ -21,9 +21,10 @@ trait Selection {
       Try(selected())
     }
 
-    override def set(value: T): Unit = {
+    override def set(value: T, propagate: Boolean): Unit = {
       select.selectedIndex = options.indexWhere(_.value == value)
-      selected() = value
+      selected.updateSilent(value)
+      if(propagate) selected.propagate()
     }
 
     override def reset(): Unit = {

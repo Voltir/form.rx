@@ -12,14 +12,15 @@ trait RadioRx {
     private val _all = head :: radios.toList
     _all.foreach(_.input.name = name)
 
-    val current: rx.Rx[Try[T]] = rx.Rx { Try(selected()) }
+    override val current: rx.Rx[Try[T]] = rx.Rx { Try(selected()) }
 
-    def set(value: T): Unit = _all.find(_.value == value).foreach { r =>
+    override def set(value: T, propagate: Boolean): Unit = _all.find(_.value == value).foreach { r =>
       r.input.checked = true
-      selected() = r.value
+      selected.updateSilent(r.value)
+      if(propagate) selected.propagate()
     }
 
-    def reset(): Unit = selected() = head.value
+    override def reset(): Unit = selected() = head.value
   }
 
   object RadioRx {
