@@ -28,6 +28,15 @@ object MacrosNext {
       c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n${missing.mkString("\n")}")
     }
 
+    //Get subset of layout accessors that are rx.core.Var types
+    val VAR_SYMBOL = typeOf[rx.core.Var[_]].typeSymbol
+    val rxVarAccessors = layoutAccessors.filter { a =>
+      a.typeSignature match {
+        case NullaryMethodType(TypeRef(_,VAR_SYMBOL, _ :: Nil)) => true
+        case _ => false
+      }
+    }
+
     val companion = getCompanion(c)(targetTpe)
 
     val magic: List[c.Tree] = fields.zipWithIndex.map { case (field,idx) =>
@@ -66,8 +75,29 @@ object MacrosNext {
       }
     }
 
+    //Hack to make Var types resetable
+    //Basic idea: Generate a Map that stores the initial values of Var from Layout
+    //And on reset, use that map as default values for each Var
+    val varMapMagic = rxVarAccessors.map { a =>
+      val name = a.name.decodedName.toString
+      q"$name -> this.$a.now"
+    }
+
+    val varUpdateMagic = rxVarAccessors.map { a =>
+      val name = a.name.decodedName.toString
+      val theType = a.typeSignature match {
+        case NullaryMethodType(TypeRef(_,VAR_SYMBOL, mahtype :: Nil)) => mahtype.dealias
+        case _ => c.abort(c.enclosingPosition,"Could not determine Var type!?")
+      }
+      q"this.$a.updateSilent(rxVarDefaults($name).asInstanceOf[$theType])"
+    }
+
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
+
+        private val rxVarDefaults: Map[String,Any] = Map(..$varMapMagic)
+
+        private def resetVars(): Unit = { ..$varUpdateMagic }
 
         val current: rx.Rx[Try[$targetTpe]] = rx.Rx {
           for(..$unmagic) yield {
@@ -80,7 +110,11 @@ object MacrosNext {
           if(propagate) current.recalc()
         }
 
-        def reset(): Unit = { ..$resetMagic }
+        def reset(): Unit = {
+          resetVars()
+         ..$resetMagic
+         current.recalc()
+        }
       }
     """)
   }

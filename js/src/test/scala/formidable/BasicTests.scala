@@ -21,13 +21,16 @@ case object SecondChoice extends ChoiceLike
 case class ThirdChoice(a: String, b: Int) extends ChoiceLike
 case class NotStrings(foo: Int, bar: Wrapped, baz: ChoiceLike)
 
+//Testing Var resets
+case class Stuff(foo: String, bar: Int)
+
 object BasicTests extends TestSuite {
 
   def tests = TestSuite {
     'object3 {
       import implicits.all._
       val foo = Thing("A","BB","CCC")
-//
+
       trait ThingLayout {
         val foo = scalatags.JsDom.tags.input(`type`:="text").render
         val bar = scalatags.JsDom.tags.input(`type`:="text").render
@@ -112,7 +115,7 @@ object BasicTests extends TestSuite {
 
       trait NotStringLayout {
         val foo = input(`type`:="text").render
-        val bar = VarRx(Wrapped(42))
+        val bar = Var(Wrapped(42))//VarRx(Wrapped(42))
         val baz = SelectionRx[ChoiceLike]()(
           Opt(FirstChoice)(value:="first", "Yolo"),
           Opt(SecondChoice)(value:="second", "Booof"),
@@ -121,12 +124,33 @@ object BasicTests extends TestSuite {
       }
 
       val test = FormidableRx[NotStringLayout,NotStrings]
-      test.bar.value() = Wrapped(82828282)
-      test.bar.reset()
+      test.bar() = Wrapped(82828282)
+      test.reset()
       //test.current(NotStrings(111,Wrapped(222),SecondChoice))
       //assert(test.foo.value == "111")
       //assert(test.bar.value == "222")
       //assert(test.baz.build == Success(SecondChoice))
+    }
+    'varResets {
+      import implicits.all._
+      val foo = Stuff("A",42)
+
+      trait StuffLayout {
+        val foo = Var("aBarTxt")
+        val bar = Var(999)
+      }
+
+      val test = FormidableRx[StuffLayout,Stuff]
+      test.set(foo)
+      println(test)
+      test.bar() = 42
+      test.foo() = "DEATHKILLMURDER"
+      println(test.current.now)
+      println("OKOKOKKO")
+      test.reset()
+      println(test.current.now)
+      assert(test.foo.now == "aBarTxt")
+      assert(test.bar.now == 999)
     }
   }
 }

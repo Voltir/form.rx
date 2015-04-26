@@ -26,16 +26,20 @@ trait Common {
   }
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
-  class FormidableVarRx[T](default: T) extends FormidableRx[T] {
-    val value = Var(default)
-    override def current = Rx { Try(value()) }
-    override def set(inp: T, propagate: Boolean) = if(propagate) value.update(inp) else value.updateSilent(inp)
-    override def reset(): Unit = value() = default
-  }
+  //Implicit for rx.Var binding
+  class VarBindRx[Target] extends BindRx[Var[Target],Target] {
+    import rx.ops._
+    override def bind(inp: Var[Target], value: Target, propagate: Boolean) = {
+      inp.updateSilent(value)
+      if(propagate) inp.propagate()
+    }
+    override def unbind(inp: Var[Target]): rx.Rx[Try[Target]] = inp.map(a => scala.util.Try(a))
 
-  object VarRx {
-    def apply[Target](default: Target) = new FormidableVarRx[Target](default)
+    //For resetting vars, we cheat. The Formidable macro itself does the reset. We must ignore this call here.
+    override def reset(inp: Var[Target]): Unit = Unit
   }
+  implicit def implicitVarBindRx[Target]: BindRx[Var[Target],Target] = new VarBindRx[Target]()
+
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
   class RxLayoutList[T, Layout <: FormidableRx[T]](make: () => Layout) extends FormidableRx[List[T]] {
 
