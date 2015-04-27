@@ -65,39 +65,23 @@ object MacrosNext {
       }
     }
 
-    def resetN(n: Int) = {
-      if(n > 0 && n < 23) {
-        val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
-        q"$companion.unapply(inp).map { case (..$vars) => $magic }"
-      }
-      else {
-        c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
-      }
-    }
-
     //Hack to make Var types resetable
-    //Basic idea: Generate a Map that stores the initial values of Var from Layout
-    //And on reset, use that map as default values for each Var
-    val varMapMagic = rxVarAccessors.map { a =>
-      val name = a.name.decodedName.toString
-      q"$name -> this.$a.now"
+    //Basic idea: Generate vals that store the default Var value when constructed
+    //And on reset, use those defaults vals to reset each Var
+    val varDefaultsMagic = rxVarAccessors.map { a =>
+      val default = a.name.decodedName.toString + "Default"
+      q"val ${TermName(default)} = this.$a.now"
     }
 
-    val varUpdateMagic = rxVarAccessors.map { a =>
-      val name = a.name.decodedName.toString
-      val theType = a.typeSignature match {
-        case NullaryMethodType(TypeRef(_,VAR_SYMBOL, mahtype :: Nil)) => mahtype.dealias
-        case _ => c.abort(c.enclosingPosition,"Could not determine Var type!?")
-      }
-      q"this.$a.updateSilent(rxVarDefaults($name).asInstanceOf[$theType])"
+    val varResetMagic = rxVarAccessors.map { a =>
+      val default = a.name.decodedName.toString + "Default"
+      q"this.$a.updateSilent(${TermName(default)})"
     }
 
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
 
-        private val rxVarDefaults: Map[String,Any] = Map(..$varMapMagic)
-
-        private def resetVars(): Unit = { ..$varUpdateMagic }
+        ..$varDefaultsMagic
 
         val current: rx.Rx[Try[$targetTpe]] = rx.Rx {
           for(..$unmagic) yield {
@@ -111,9 +95,9 @@ object MacrosNext {
         }
 
         def reset(): Unit = {
-          resetVars()
-         ..$resetMagic
-         current.recalc()
+          ..$varResetMagic
+          ..$resetMagic
+          current.recalc()
         }
       }
     """)
