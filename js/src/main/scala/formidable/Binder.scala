@@ -9,5 +9,5 @@ trait Binder[I,O] {
 trait BindRx[I,O] {
   def bind(inp: I, value: O, propagate: Boolean = true): Unit
   def unbind(inp: I): rx.Rx[Try[O]]
-  def reset(inp: I): Unit
+  def reset(inp: I, propagate: Boolean = true): Unit
 }

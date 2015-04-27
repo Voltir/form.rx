@@ -11,7 +11,7 @@ trait Common {
   class Ignored[T](val default: T) extends FormidableRx[T] {
     override def current: Rx[Try[T]] = Rx { Success(default) }
     override def set(inp: T, propagate: Boolean): Unit = Unit
-    override def reset(): Unit = Unit
+    override def reset(propagate: Boolean): Unit = Unit
   }
 
   object Ignored {
@@ -22,7 +22,7 @@ trait Common {
   class FormidableBindRx[F <: FormidableRx[Target],Target] extends BindRx[F,Target] {
     override def bind(inp: F, value: Target, propagate: Boolean) = inp.set(value, propagate)
     override def unbind(inp: F): rx.Rx[Try[Target]] = inp.current
-    override def reset(inp: F): Unit = inp.reset()
+    override def reset(inp: F, propagate: Boolean): Unit = inp.reset(propagate)
   }
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
@@ -36,7 +36,7 @@ trait Common {
     override def unbind(inp: Var[Target]): rx.Rx[Try[Target]] = inp.map(a => scala.util.Try(a))
 
     //For resetting vars, we cheat. The Formidable macro itself does the reset. We must ignore this call here.
-    override def reset(inp: Var[Target]): Unit = Unit
+    override def reset(inp: Var[Target], propagate: Boolean): Unit = Unit
   }
   implicit def implicitVarBindRx[Target]: BindRx[Var[Target],Target] = new VarBindRx[Target]()
 
@@ -60,8 +60,9 @@ trait Common {
       if(propagate) values.propagate()
     }
 
-    override def reset(): Unit = {
+    override def reset(propagate: Boolean): Unit = {
       values() = collection.mutable.Buffer.empty
+
     }
 
     def append(elem: Layout): Unit = {

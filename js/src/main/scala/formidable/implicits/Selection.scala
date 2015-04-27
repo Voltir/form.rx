@@ -28,9 +28,10 @@ trait Selection {
       if(propagate) selected.propagate()
     }
 
-    override def reset(): Unit = {
+    override def reset(propagate: Boolean): Unit = {
       select.selectedIndex = 0
-      selected() = head.value
+      selected.updateSilent(head.value)
+      if(propagate) selected.propagate()
     }
   }
 
@@ -52,9 +53,10 @@ trait Selection {
       if(propagate) selectedIndex.propagate()
     }
 
-    override def reset(): Unit = {
-      selectedIndex() = 0
-      onReset(true) //todo add propagate to reset
+    override def reset(propagate: Boolean): Unit = {
+      selectedIndex.updateSilent(0)
+      onReset(propagate)
+      if(propagate) selectedIndex.propagate()
     }
 
     private val watchOptions = Obs(optionsRx) {

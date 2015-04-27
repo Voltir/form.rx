@@ -29,23 +29,29 @@ trait TextArea {
   class TextAreaBindRx[Target: StringConstructable]
     extends BindRx[dom.html.TextArea,Target]
     with TextAreaRxDynamic[Target] {
+
     val builder = implicitly[StringConstructable[Target]]
 
-    def bind(inp: dom.html.TextArea, value: Target, propagate: Boolean): Unit = {
+    private val make = (s: String) => builder.parse(s)
+
+    private def update(inp: dom.html.TextArea, propagate: Boolean): Unit = {
+      val dynamicVar = bindDynamic(inp)(make)
+      dynamicVar.updateSilent(make(inp.value))
+      if(propagate) dynamicVar.propagate()
+    }
+
+    override def bind(inp: dom.html.TextArea, value: Target, propagate: Boolean): Unit = {
       inp.value = builder.asString(value)
-      val dynamicRx = bindDynamic(inp)(s => builder.parse(inp.value))
-      if(propagate) dynamicRx.recalc()
+      update(inp,propagate)
     }
 
-    def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
-      val result = bindDynamic(inp)(s => builder.parse(inp.value))
-      inp.onkeyup = (ev:dom.KeyboardEvent) => result.recalc()
-      result
+    override def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
+      bindDynamic(inp)(make)
     }
 
-    def reset(inp: dom.html.TextArea): Unit = {
+    override def reset(inp: dom.html.TextArea, propagate: Boolean): Unit = {
       inp.value = ""
-      bindDynamic(inp)(s => builder.parse(inp.value)).recalc()
+      update(inp, propagate)
     }
   }
 

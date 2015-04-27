@@ -20,7 +20,9 @@ trait RadioRx {
       if(propagate) selected.propagate()
     }
 
-    override def reset(): Unit = selected() = head.value
+    override def reset(propagate: Boolean): Unit = {
+      set(head.value, propagate)
+    }
   }
 
   object RadioRx {

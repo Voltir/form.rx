@@ -5,6 +5,7 @@ import formidable.Implicits.Chk
 import org.scalajs.dom._
 import scala.util.Try
 import scalatags.JsDom.all._
+import rx._
 
 trait Checkbox {
 
@@ -18,13 +19,15 @@ trait Checkbox {
       if(propagate) current.recalc()
     }
 
-    override def reset(): Unit = set(default)
+    override def reset(propagate: Boolean): Unit = {
+      set(default, propagate)
+    }
 
     input.onchange = { (_:Event) => current.recalc() }
   }
 
   //BindRx for Set[T]/List[T] <=> Checkbox elements
-  class CheckboxBaseRx[T, Container[_]]
+  class CheckboxBaseRx[T, Container[_] <: Traversable[_]]
       (name: String)
       (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
       (checks: Chk[T] *) extends FormidableRx[Container[T]] {
@@ -33,20 +36,30 @@ trait Checkbox {
       c.input.onchange = { (_:Event) => current.recalc() }
       c }.toBuffer
 
-    override lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try {
-      buildFrom(checks.filter(_.input.checked).map(_.value))
-    }}
+    private val changeme : Var[Container[T]] = Var(buildFrom(Seq.empty))
+
+//    override lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try {
+//      buildFrom(checks.filter(_.input.checked).map(_.value))
+//    }}
+
+    private def meh(): Seq[T] = {
+      checks.filter(_.input.checked).map(_.value)
+    }
+
+    override lazy val current: Rx[Try[Container[T]]] = Rx { Try(changeme()) }
 
     override def set(values: Container[T], propagate: Boolean) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
-      if(propagate) current.recalc()
+      changeme.updateSilent(buildFrom(meh()))
+      if(propagate) changeme.propagate()
     }
 
-    override def reset(): Unit = {
+    override def reset(propagate: Boolean): Unit = {
       checks.foreach { _.input.checked = false }
-      current.recalc()
+      changeme.updateSilent(buildFrom(meh()))
+      if(propagate) changeme.propagate()
     }
   }
 

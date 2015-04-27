@@ -5,6 +5,7 @@ import formidable.{BindRx, KCode, KeyboardPolyfill, FormidableRx}
 import org.scalajs.dom
 import org.scalajs.dom.html
 import rx._
+import rx.core.Propagator
 
 import scala.collection.generic.CanBuildFrom
 import scala.scalajs.js
@@ -47,18 +48,18 @@ trait Input {
       if(propagate) dynamicVar.propagate()
     }
 
-    def bind(inp: dom.html.Input, value: Target, propagate: Boolean): Unit = {
+    override def bind(inp: dom.html.Input, value: Target, propagate: Boolean): Unit = {
       inp.value = builder.asString(value)
       update(inp,propagate)
     }
 
-    def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
+    override def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(make)
     }
 
-    def reset(inp: dom.html.Input): Unit = {
+    override def reset(inp: dom.html.Input, propagate: Boolean): Unit = {
       inp.value = ""
-      update(inp,true)
+      update(inp, propagate)
     }
   }
 
@@ -122,7 +123,9 @@ trait Input {
       if(propagate) values.propagate()
     }
 
-    override def reset(): Unit = set(List.empty)
+    override def reset(propagate: Boolean): Unit = {
+      set(List.empty, propagate)
+    }
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
@@ -172,7 +175,7 @@ trait Input {
       if(propagate) values.propagate()
     }
 
-    override def reset(): Unit = Set.empty
+    override def reset(propagate: Boolean): Unit = set(Set.empty, propagate)
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
@@ -224,14 +227,13 @@ trait Input {
     override def set(inp: T, propagate: Boolean) = {
       input.value = builder.asString(inp)
       _current.updateSilent(Success(inp))
-      if(propagate) {
-        _current.recalc()
-      }
+      if(propagate) _current.propagate()
     }
 
-    override def reset(): Unit = {
+    override def reset(propagate: Boolean): Unit = {
       input.value = ""
-      _current() = Failure(Uninitialized)
+      _current.updateSilent(Failure(Uninitialized))
+      if(propagate) _current.propagate()
     }
   }
 

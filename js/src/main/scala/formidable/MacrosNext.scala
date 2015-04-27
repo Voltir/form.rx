@@ -83,7 +83,7 @@ object MacrosNext {
 
         ..$varDefaultsMagic
 
-        val current: rx.Rx[Try[$targetTpe]] = rx.Rx {
+        val current: Rx[Try[$targetTpe]] = Rx {
           for(..$unmagic) yield {
             $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
           }
@@ -91,10 +91,10 @@ object MacrosNext {
 
         override def set(inp: $targetTpe, propagate: Boolean): Unit = {
           ${bindN(fields.size)}
-          if(propagate) current.recalc()
+          current.recalc()
         }
 
-        def reset(): Unit = {
+        def reset(propagate: Boolean): Unit = {
           ..$varResetMagic
           ..$resetMagic
           current.recalc()

@@ -59,6 +59,7 @@ object BasicTests extends TestSuite {
       println("####################### RESET #################")
       before = rxCount ; test.reset() ; after = rxCount
       //todo make work: assert(after == before + 1)
+      println(s"Before $before, After $after")
       assert(test.foo.value == "")
       assert(test.bar.value == "")
       assert(test.baz.value == "")
@@ -102,7 +103,13 @@ object BasicTests extends TestSuite {
       assert(test.inner.a.value == "")
       assert(test.inner.b.value == "")
       assert(test.foo.value == "LOL")
+      println("#### LOOK AFTER THIS LINE#######")
       test.set(Outer("LOL",Inner("QQQ","ZZZ")))
+      println("WHAT AM I NOW???")
+      println(test.current.now)
+      println(test.inner.current.recalc())
+      assert(test.inner.current.now.get.a == "QQQ")
+      assert(test.inner.current.now.get.b == "ZZZ")
       test.reset()
       assert(test.inner.a.value == "")
       assert(test.inner.b.value == "")
@@ -162,3 +169,5 @@ object BasicTests extends TestSuite {
     }
   }
 }
+
+//todo test CheckboxBaseRx
