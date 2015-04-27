@@ -131,7 +131,7 @@ object BasicTests extends TestSuite {
       //assert(test.bar.value == "222")
       //assert(test.baz.build == Success(SecondChoice))
     }
-    'varResets {
+    'vars {
       import implicits.all._
       val foo = Stuff("A",42)
 
@@ -141,16 +141,24 @@ object BasicTests extends TestSuite {
       }
 
       val test = FormidableRx[StuffLayout,Stuff]
+
+      var count = 0
+      val rxChecker = Rx {
+        test.current()
+        count += 1
+      }
+      val before = count
       test.set(foo)
-      println(test)
       test.bar() = 42
-      test.foo() = "DEATHKILLMURDER"
-      println(test.current.now)
-      println("OKOKOKKO")
+      test.foo() = "omgdifferent"
+      val newStuff = test.current.now.get
+      assert(newStuff.bar == 42)
+      assert(newStuff.foo == "omgdifferent")
       test.reset()
-      println(test.current.now)
+      val after = count
       assert(test.foo.now == "aBarTxt")
       assert(test.bar.now == 999)
+      //todo: assert(after == before + 2)
     }
   }
 }
