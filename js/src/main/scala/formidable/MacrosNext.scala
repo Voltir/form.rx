@@ -83,21 +83,35 @@ object MacrosNext {
 
         ..$varDefaultsMagic
 
-        val current: Rx[Try[$targetTpe]] = Rx {
+        private var isUpdating = false
+
+        val dependencies: Rx[Try[$targetTpe]] = Rx {
           for(..$unmagic) yield {
             $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
           }
         }
 
+        override val current: Var[Try[$targetTpe]] = Var(dependencies())
+
+        private val dependencyObs = Obs(dependencies,skipInitial = true) {
+          if(!isUpdating) current() = dependencies.now
+        }
+
         override def set(inp: $targetTpe, propagate: Boolean): Unit = {
+          isUpdating = true
           ${bindN(fields.size)}
-          current.recalc()
+          current.updateSilent(Try(inp))
+          isUpdating = false
+          if(propagate) current.propagate()
         }
 
         def reset(propagate: Boolean): Unit = {
+          isUpdating = true
           ..$varResetMagic
           ..$resetMagic
-          current.recalc()
+          current.updateSilent(dependencies.now)
+          isUpdating = false
+          if(propagate) current.propagate()
         }
       }
     """)

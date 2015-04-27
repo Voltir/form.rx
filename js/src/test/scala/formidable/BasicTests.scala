@@ -103,11 +103,7 @@ object BasicTests extends TestSuite {
       assert(test.inner.a.value == "")
       assert(test.inner.b.value == "")
       assert(test.foo.value == "LOL")
-      println("#### LOOK AFTER THIS LINE#######")
       test.set(Outer("LOL",Inner("QQQ","ZZZ")))
-      println("WHAT AM I NOW???")
-      println(test.current.now)
-      println(test.inner.current.recalc())
       assert(test.inner.current.now.get.a == "QQQ")
       assert(test.inner.current.now.get.b == "ZZZ")
       test.reset()
@@ -156,16 +152,18 @@ object BasicTests extends TestSuite {
       }
       val before = count
       test.set(foo)
-      test.bar() = 42
+      assert(count == before + 1)
+      test.bar() = 9000
+      assert(count == before + 2)
       test.foo() = "omgdifferent"
+      assert(count == before + 3)
       val newStuff = test.current.now.get
-      assert(newStuff.bar == 42)
+      assert(newStuff.bar == 9000)
       assert(newStuff.foo == "omgdifferent")
       test.reset()
-      val after = count
+      assert(count == before + 4)
       assert(test.foo.now == "aBarTxt")
       assert(test.bar.now == 999)
-      //todo: assert(after == before + 2)
     }
   }
 }
