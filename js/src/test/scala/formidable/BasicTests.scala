@@ -63,7 +63,6 @@ object BasicTests extends TestSuite {
       assert(test.foo.value == "")
       assert(test.bar.value == "")
       assert(test.baz.value == "")
-
     }
     'ignored {
       import implicits.all._

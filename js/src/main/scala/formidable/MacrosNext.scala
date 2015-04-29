@@ -97,21 +97,19 @@ object MacrosNext {
           if(!isUpdating) current() = dependencies.now
         }
 
-        override def set(inp: $targetTpe, propagate: Boolean): Unit = {
+        override def set(inp: $targetTpe): Unit = {
           isUpdating = true
           ${bindN(fields.size)}
-          current.updateSilent(Try(inp))
+          current() = Try(inp)
           isUpdating = false
-          if(propagate) current.propagate()
         }
 
-        def reset(propagate: Boolean): Unit = {
+        def reset(): Unit = {
           isUpdating = true
           ..$varResetMagic
           ..$resetMagic
-          current.updateSilent(dependencies.now)
+          current() = dependencies.now
           isUpdating = false
-          if(propagate) current.propagate()
         }
       }
     """)
