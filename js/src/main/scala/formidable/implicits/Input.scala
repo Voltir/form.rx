@@ -42,24 +42,23 @@ trait Input {
     
     private val make = (s: String) => builder.parse(s)
 
-    private def update(inp: dom.html.Input, propagate: Boolean): Unit = {
+    private def update(inp: dom.html.Input): Unit = {
       val dynamicVar = bindDynamic(inp)(make)
-      dynamicVar.updateSilent(make(inp.value))
-      if(propagate) dynamicVar.propagate()
+      dynamicVar() = make(inp.value)
     }
 
-    override def bind(inp: dom.html.Input, value: Target, propagate: Boolean): Unit = {
+    override def bind(inp: dom.html.Input, value: Target): Unit = {
       inp.value = builder.asString(value)
-      update(inp,propagate)
+      update(inp)
     }
 
     override def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(make)
     }
 
-    override def reset(inp: dom.html.Input, propagate: Boolean): Unit = {
+    override def reset(inp: dom.html.Input): Unit = {
       inp.value = ""
-      update(inp, propagate)
+      update(inp)
     }
   }
 
@@ -117,14 +116,13 @@ trait Input {
       values().map(_.current().get).toList
     }}
 
-    override def set(newValues: List[T], propagate: Boolean) = {
+    override def set(newValues: List[T]) = {
       values.now.foreach { r => r.current.kill() }
-      values.updateSilent(newValues.map { t => newLayout(t)}.toBuffer)
-      if(propagate) values.propagate()
+      values() = newValues.map { t => newLayout(t)}.toBuffer
     }
 
-    override def reset(propagate: Boolean): Unit = {
-      set(List.empty, propagate)
+    override def reset(): Unit = {
+      set(List.empty)
     }
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
@@ -169,13 +167,12 @@ trait Input {
       values().map(_.current().get).toSet
     }}
 
-    override def set(newValues: Set[T], propagate: Boolean) = {
+    override def set(newValues: Set[T]) = {
       values.now.foreach { r => r.current.kill() }
-      values.updateSilent(mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*))
-      if(propagate) values.propagate()
+      values() = mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*)
     }
 
-    override def reset(propagate: Boolean): Unit = set(Set.empty, propagate)
+    override def reset(): Unit = set(Set.empty)
 
     protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
@@ -224,16 +221,14 @@ trait Input {
       rxMods.map(_(_current))
     ).render
 
-    override def set(inp: T, propagate: Boolean) = {
+    override def set(inp: T) = {
       input.value = builder.asString(inp)
-      _current.updateSilent(Success(inp))
-      if(propagate) _current.propagate()
+      _current() = Success(inp)
     }
 
-    override def reset(propagate: Boolean): Unit = {
+    override def reset(): Unit = {
       input.value = ""
-      _current.updateSilent(Failure(Uninitialized))
-      if(propagate) _current.propagate()
+      _current() = Failure(Uninitialized)
     }
   }
 

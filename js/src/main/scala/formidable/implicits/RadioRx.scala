@@ -14,14 +14,13 @@ trait RadioRx {
 
     override val current: rx.Rx[Try[T]] = rx.Rx { Try(selected()) }
 
-    override def set(value: T, propagate: Boolean): Unit = _all.find(_.value == value).foreach { r =>
+    override def set(value: T): Unit = _all.find(_.value == value).foreach { r =>
       r.input.checked = true
-      selected.updateSilent(r.value)
-      if(propagate) selected.propagate()
+      selected() = r.value
     }
 
-    override def reset(propagate: Boolean): Unit = {
-      set(head.value, propagate)
+    override def reset(): Unit = {
+      set(head.value)
     }
   }
 

@@ -22,16 +22,14 @@ trait Selection {
       Try(selected())
     }
 
-    override def set(value: T, propagate: Boolean): Unit = {
+    override def set(value: T): Unit = {
       select.selectedIndex = options.indexWhere(_.value == value)
-      selected.updateSilent(value)
-      if(propagate) selected.propagate()
+      selected() = value
     }
 
-    override def reset(propagate: Boolean): Unit = {
+    override def reset(): Unit = {
       select.selectedIndex = 0
-      selected.updateSilent(head.value)
-      if(propagate) selected.propagate()
+      selected() = head.value
     }
   }
 
@@ -48,15 +46,12 @@ trait Selection {
       Try(optionsRx.now(selectedIndex()).value)
     }
 
-    override def set(value: T, propagate: Boolean): Unit = {
-      selectedIndex.updateSilent(optionsRx.now.indexOf(value))
-      if(propagate) selectedIndex.propagate()
+    override def set(value: T): Unit = {
+      selectedIndex() = optionsRx.now.indexOf(value)
     }
 
-    override def reset(propagate: Boolean): Unit = {
-      selectedIndex.updateSilent(0)
-      onReset(propagate)
-      if(propagate) selectedIndex.propagate()
+    override def reset(): Unit = {
+      selectedIndex() = 0
     }
 
     private val watchOptions = Obs(optionsRx) {
