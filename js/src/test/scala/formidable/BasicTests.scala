@@ -39,27 +39,15 @@ object BasicTests extends TestSuite {
 
       val test = FormidableRx[ThingLayout,Thing]
 
-      var before = 0
-      var after = 0
-      var rxCount = 0
-      val obs = Rx {
-        println("OMG TEST CHANGED")
-        println(test.current())
-        rxCount += 1
-      }
-
       println("####################### SET FOO #################")
-      before = rxCount ; test.set(foo) ; after = rxCount
-      assert(after == before + 1)
+      test.set(foo)
       println("###### DONNNE ####")
       assert(test.foo.value == "A")
       assert(test.bar.value == "BB")
       assert(test.baz.value == "CCC")
 
       println("####################### RESET #################")
-      before = rxCount ; test.reset() ; after = rxCount
-      //todo make work: assert(after == before + 1)
-      println(s"Before $before, After $after")
+      test.reset()
       assert(test.foo.value == "")
       assert(test.bar.value == "")
       assert(test.baz.value == "")
@@ -128,10 +116,6 @@ object BasicTests extends TestSuite {
       val test = FormidableRx[NotStringLayout,NotStrings]
       test.bar() = Wrapped(82828282)
       test.reset()
-      //test.current(NotStrings(111,Wrapped(222),SecondChoice))
-      //assert(test.foo.value == "111")
-      //assert(test.bar.value == "222")
-      //assert(test.baz.build == Success(SecondChoice))
     }
     'vars {
       import implicits.all._
@@ -144,23 +128,13 @@ object BasicTests extends TestSuite {
 
       val test = FormidableRx[StuffLayout,Stuff]
 
-      var count = 0
-      val rxChecker = Rx {
-        test.current()
-        count += 1
-      }
-      val before = count
       test.set(foo)
-      assert(count == before + 1)
       test.bar() = 9000
-      assert(count == before + 2)
       test.foo() = "omgdifferent"
-      assert(count == before + 3)
       val newStuff = test.current.now.get
       assert(newStuff.bar == 9000)
       assert(newStuff.foo == "omgdifferent")
       test.reset()
-      assert(count == before + 4)
       assert(test.foo.now == "aBarTxt")
       assert(test.bar.now == 999)
     }

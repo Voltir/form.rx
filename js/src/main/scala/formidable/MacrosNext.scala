@@ -42,7 +42,7 @@ object MacrosNext {
     val magic: List[c.Tree] = fields.zipWithIndex.map { case (field,idx) =>
       val term = TermName(s"a$idx")
       val accessor = layoutAccessors.find(_.name == field.name).get
-      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term,false)"
+      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term)"
     }
 
     val unmagic: List[c.Tree] = fields.zipWithIndex.map { case (field,i) =>
@@ -83,35 +83,23 @@ object MacrosNext {
 
         ..$varDefaultsMagic
 
-        private var isUpdating = false
-
-        val dependencies: Rx[Try[$targetTpe]] = Rx {
+        val current: Rx[Try[$targetTpe]] = Rx {
           for(..$unmagic) yield {
             $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
           }
         }
 
-        override val current: Var[Try[$targetTpe]] = Var(dependencies())
-
-        private val dependencyObs = Obs(dependencies,skipInitial = true) {
-          if(!isUpdating) current() = dependencies.now
-        }
-
         override def set(inp: $targetTpe): Unit = {
-          isUpdating = true
           ${bindN(fields.size)}
-          current() = Try(inp)
-          isUpdating = false
         }
 
         def reset(): Unit = {
-          isUpdating = true
           ..$varResetMagic
           ..$resetMagic
-          current() = dependencies.now
-          isUpdating = false
         }
       }
     """)
   }
 }
+
+//todo add isupdating a reactive var boolean - true to false, current if isupdating() fail else success
