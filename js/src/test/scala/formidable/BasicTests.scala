@@ -41,7 +41,7 @@ object BasicTests extends TestSuite {
 
       println("####################### SET FOO #################")
       test.set(foo)
-      println("###### DONNNE ####")
+      //println("###### DONNNE ####")
       assert(test.foo.value == "A")
       assert(test.bar.value == "BB")
       assert(test.baz.value == "CCC")

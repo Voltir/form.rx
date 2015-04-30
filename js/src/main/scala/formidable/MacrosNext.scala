@@ -1,5 +1,7 @@
 package formidable
 
+import rx._
+
 import scala.reflect.macros._
 import scala.language.experimental.macros
 
@@ -81,25 +83,34 @@ object MacrosNext {
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
 
+        val isUpdating: Var[Boolean] = Var(false)
+
         ..$varDefaultsMagic
 
         val current: Rx[Try[$targetTpe]] = Rx {
-          for(..$unmagic) yield {
-            $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
+          if(isUpdating()){
+            Failure(LoadFailure)
+          }
+          else {
+            for(..$unmagic) yield {
+              $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
+            }
           }
         }
 
         override def set(inp: $targetTpe): Unit = {
+          isUpdating() = true
           ${bindN(fields.size)}
+          isUpdating() = false
         }
 
         def reset(): Unit = {
+          isUpdating() = true
           ..$varResetMagic
           ..$resetMagic
+          isUpdating() = false
         }
       }
     """)
   }
 }
-
-//todo add isupdating a reactive var boolean - true to false, current if isupdating() fail else success
