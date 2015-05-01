@@ -34,24 +34,23 @@ trait TextArea {
 
     private val make = (s: String) => builder.parse(s)
 
-    private def update(inp: dom.html.TextArea, propagate: Boolean): Unit = {
+    private def update(inp: dom.html.TextArea): Unit = {
       val dynamicVar = bindDynamic(inp)(make)
-      dynamicVar.updateSilent(make(inp.value))
-      if(propagate) dynamicVar.propagate()
+      dynamicVar() = make(inp.value)
     }
 
-    override def bind(inp: dom.html.TextArea, value: Target, propagate: Boolean): Unit = {
+    override def bind(inp: dom.html.TextArea, value: Target): Unit = {
       inp.value = builder.asString(value)
-      update(inp,propagate)
+      update(inp)
     }
 
     override def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(make)
     }
 
-    override def reset(inp: dom.html.TextArea, propagate: Boolean): Unit = {
+    override def reset(inp: dom.html.TextArea): Unit = {
       inp.value = ""
-      update(inp, propagate)
+      update(inp)
     }
   }
 

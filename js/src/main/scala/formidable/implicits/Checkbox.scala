@@ -14,13 +14,13 @@ trait Checkbox {
     val input = scalatags.JsDom.all.input(`type`:="checkbox", mods).render
     val current: rx.Rx[Try[Boolean]] = rx.Rx { Try(input.checked)}
 
-    override def set(inp: Boolean, propagate: Boolean): Unit = {
+    override def set(inp: Boolean): Unit = {
       input.checked = inp
-      if(propagate) current.recalc()
+      current.recalc()
     }
 
-    override def reset(propagate: Boolean): Unit = {
-      set(default, propagate)
+    override def reset(): Unit = {
+      set(default)
     }
 
     input.onchange = { (_:Event) => current.recalc() }
@@ -48,18 +48,16 @@ trait Checkbox {
 
     override lazy val current: Rx[Try[Container[T]]] = Rx { Try(changeme()) }
 
-    override def set(values: Container[T], propagate: Boolean) = {
+    override def set(values: Container[T]) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
-      changeme.updateSilent(buildFrom(meh()))
-      if(propagate) changeme.propagate()
+      changeme() = buildFrom(meh())
     }
 
-    override def reset(propagate: Boolean): Unit = {
+    override def reset(): Unit = {
       checks.foreach { _.input.checked = false }
-      changeme.updateSilent(buildFrom(meh()))
-      if(propagate) changeme.propagate()
+      changeme() = buildFrom(meh())
     }
   }
 

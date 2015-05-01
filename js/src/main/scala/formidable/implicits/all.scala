@@ -6,4 +6,8 @@ object all
   with TextArea
   with Checkbox
   with RadioRx
-  with Selection
+  with Selection {
+  case object LoadFailure extends Throwable("Formidable is actively processing")
+}
+
+

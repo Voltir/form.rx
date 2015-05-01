@@ -1,5 +1,7 @@
 package formidable
 
+import rx._
+
 import scala.reflect.macros._
 import scala.language.experimental.macros
 
@@ -42,7 +44,7 @@ object MacrosNext {
     val magic: List[c.Tree] = fields.zipWithIndex.map { case (field,idx) =>
       val term = TermName(s"a$idx")
       val accessor = layoutAccessors.find(_.name == field.name).get
-      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term,false)"
+      q"implicitly[BindRx[${accessor.info.dealias},${field.info.dealias}]].bind(this.$accessor,$term)"
     }
 
     val unmagic: List[c.Tree] = fields.zipWithIndex.map { case (field,i) =>
@@ -81,37 +83,32 @@ object MacrosNext {
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
 
+        val isUpdating: Var[Boolean] = Var(false)
+
         ..$varDefaultsMagic
 
-        private var isUpdating = false
-
-        val dependencies: Rx[Try[$targetTpe]] = Rx {
-          for(..$unmagic) yield {
-            $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
+        val current: Rx[Try[$targetTpe]] = Rx {
+          if(isUpdating()){
+            Failure(LoadFailure)
+          }
+          else {
+            for(..$unmagic) yield {
+              $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
+            }
           }
         }
 
-        override val current: Var[Try[$targetTpe]] = Var(dependencies())
-
-        private val dependencyObs = Obs(dependencies,skipInitial = true) {
-          if(!isUpdating) current() = dependencies.now
-        }
-
-        override def set(inp: $targetTpe, propagate: Boolean): Unit = {
-          isUpdating = true
+        override def set(inp: $targetTpe): Unit = {
+          isUpdating() = true
           ${bindN(fields.size)}
-          current.updateSilent(Try(inp))
-          isUpdating = false
-          if(propagate) current.propagate()
+          isUpdating() = false
         }
 
-        def reset(propagate: Boolean): Unit = {
-          isUpdating = true
+        def reset(): Unit = {
+          isUpdating() = true
           ..$varResetMagic
           ..$resetMagic
-          current.updateSilent(dependencies.now)
-          isUpdating = false
-          if(propagate) current.propagate()
+          isUpdating() = false
         }
       }
     """)

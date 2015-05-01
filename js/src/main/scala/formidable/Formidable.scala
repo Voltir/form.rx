@@ -14,8 +14,8 @@ object Formidable {
 
 trait FormidableRx[Target] {
   def current: rx.Rx[Try[Target]]
-  def set(inp: Target, propagate: Boolean = true): Unit
-  def reset(propagate: Boolean = true): Unit
+  def set(inp: Target): Unit
+  def reset(): Unit
 }
 
 object FormidableRx {
