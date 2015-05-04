@@ -89,7 +89,7 @@ object MacrosNext {
 
         val current: Rx[Try[$targetTpe]] = Rx {
           if(isUpdating()){
-            Failure(LoadFailure)
+            scala.util.Failure(LoadFailure)
           }
           else {
             for(..$unmagic) yield {
