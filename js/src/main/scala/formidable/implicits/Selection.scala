@@ -10,12 +10,12 @@ import scalatags.JsDom.all._
 
 trait Selection {
   //Binders for T <=> Select element
-  class SelectionRx[T](selectMods: Modifier *)(head: Opt[T], options: Opt[T] *) extends FormidableRx[T] {
-    private val values = collection.mutable.Buffer(head.value) ++ options.map(_.value).toBuffer
-    private val selected: rx.Var[T] = rx.Var(options.head.value)
+  class SelectionRx[T](selectMods: Modifier *)(head: Opt[T], tail: Opt[T] *) extends FormidableRx[T] {
+    private val options = collection.mutable.Buffer(head) ++ tail.toBuffer
+    private val selected: rx.Var[T] = rx.Var(head.value)
 
     val select: dom.html.Select = scalatags.JsDom.all.select(
-      scalatags.JsDom.all.onchange:={() => selected() = values(select.selectedIndex) }
+      scalatags.JsDom.all.onchange:={() => selected() = options(select.selectedIndex).value }
     )(selectMods)(options.map(_.option):_*).render
 
     override val current: rx.Rx[Try[T]] = rx.Rx {
@@ -34,7 +34,7 @@ trait Selection {
   }
 
   //Select element with dynamic (ie Rx'ing) set of choices
-  class DynamicSelectionRx[T](onReset: Boolean => Unit, selectMods: Modifier *)(optionsRx: Rx[List[Opt[T]]]) extends FormidableRx[T] {
+  class DynamicSelectionRx[T](onReset: () => Unit, selectMods: Modifier *)(optionsRx: Rx[List[Opt[T]]]) extends FormidableRx[T] {
     private val selectedIndex: Var[Int] = Var(0)
 
     val select: dom.html.Select = scalatags.JsDom.all.select(
@@ -52,6 +52,7 @@ trait Selection {
 
     override def reset(): Unit = {
       selectedIndex() = 0
+      onReset()
     }
 
     private val watchOptions = Obs(optionsRx) {
@@ -69,7 +70,7 @@ trait Selection {
 
   object SelectionRx {
     def apply[T](selectMods: Modifier*)(head: Opt[T], options: Opt[T] *) = new SelectionRx[T](selectMods)(head, options:_*)
-    def dynamic[T](onReset: Boolean => Unit, selectMods: Modifier *)(options: Rx[List[Opt[T]]]) =
+    def dynamic[T](onReset: () => Unit, selectMods: Modifier *)(options: Rx[List[Opt[T]]]) =
       new DynamicSelectionRx[T](onReset,selectMods)(options)
   }
 }
