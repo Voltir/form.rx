@@ -29,13 +29,14 @@ trait Common {
   //Implicit for rx.Var binding
   class VarBindRx[Target] extends BindRx[Var[Target],Target] {
     import rx.ops._
-    override def bind(inp: Var[Target], value: Target) = {
-      inp() = value
-    }
+    override def bind(inp: Var[Target], value: Target) = inp() = value
     override def unbind(inp: Var[Target]): rx.Rx[Try[Target]] = inp.map(a => scala.util.Try(a))
 
     //For resetting vars, we cheat. The Formidable macro itself does the reset. We must ignore this call here.
-    override def reset(inp: Var[Target]): Unit = Unit
+    override def reset(inp: Var[Target]): Unit = {
+      println("RESET QUITE!")
+      Unit
+    }
   }
   implicit def implicitVarBindRx[Target]: BindRx[Var[Target],Target] = new VarBindRx[Target]()
 

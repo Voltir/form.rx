@@ -60,7 +60,7 @@ object MacrosNext {
     def bindN(n: Int) = {
       if(n > 0 && n < 23) {
         val vars = (0 until n).map(i => pq"${TermName(s"a$i")}")
-        q"$companion.unapply(inp).map { case (..$vars) => $magic }"
+        q"""$companion.unapply(inp).map { case (..$vars) => $magic }"""
       }
       else {
         c.abort(c.enclosingPosition,"Unsupported Case Class Dimension")
@@ -83,14 +83,14 @@ object MacrosNext {
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
 
-        val isUpdating: Var[Boolean] = Var(false)
+        private var isUpdating: Boolean = false
 
         ..$varDefaultsMagic
 
         val current: Rx[Try[$targetTpe]] = Rx {
-          if(isUpdating()){
+          if(isUpdating) {
             scala.util.Failure(LoadFailure)
-          }
+           }
           else {
             for(..$unmagic) yield {
               $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
@@ -98,17 +98,24 @@ object MacrosNext {
           }
         }
 
+        private def startUpdate(): Unit = isUpdating = true
+
+        private def stopUpdate(): Unit = {
+          isUpdating = false
+          current.recalc()
+        }
+
         override def set(inp: $targetTpe): Unit = {
-          isUpdating() = true
+          startUpdate()
           ${bindN(fields.size)}
-          isUpdating() = false
+          stopUpdate()
         }
 
         def reset(): Unit = {
-          isUpdating() = true
+          startUpdate()
           ..$varResetMagic
           ..$resetMagic
-          isUpdating() = false
+          stopUpdate()
         }
       }
     """)
