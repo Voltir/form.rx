@@ -106,7 +106,7 @@ trait Input {
   class TextRxBufferList[T, Layout <: FormidableRx[T]]
       (val inputTag: TypedTag[dom.html.Input])
       (val fromString: String => T)
-      (val newLayout: T => Layout) extends FormidableRx[List[T]] {
+      (val newLayout: () => Layout) extends FormidableRx[List[T]] {
 
     val values: rx.Var[mut.Buffer[Layout]] = rx.Var(mut.Buffer.empty)
 
@@ -118,7 +118,11 @@ trait Input {
 
     override def set(newValues: List[T]) = {
       values.now.foreach { r => r.current.kill() }
-      values() = newValues.map { t => newLayout(t)}.toBuffer
+      values() = newValues.map { t =>
+        val layout = newLayout()
+        layout.set(t)
+        layout
+      }.toBuffer
     }
 
     override def reset(): Unit = {
@@ -131,7 +135,8 @@ trait Input {
 
         def doUpdate(meh: Int) = {
           val elem = fromString(jsThis.value.take(jsThis.value.size - meh))
-          val layout = newLayout(elem)
+          val layout = newLayout()
+          layout.set(elem)
           jsThis.value = ""
           values.now.append(layout)
           values.recalc()
@@ -157,7 +162,7 @@ trait Input {
   class TextRxSet[T, Layout <: FormidableRx[T]]
     (val inputTag: TypedTag[dom.html.Input])
     (val fromString: String => T)
-    (val newLayout: T => Layout) extends FormidableRx[Set[T]] {
+    (val newLayout: () => Layout) extends FormidableRx[Set[T]] {
 
     val values: rx.Var[mut.Set[Layout]] = rx.Var(mut.Set.empty)
 
@@ -169,7 +174,11 @@ trait Input {
 
     override def set(newValues: Set[T]) = {
       values.now.foreach { r => r.current.kill() }
-      values() = mut.Set(newValues.map { t => newLayout(t)}.toSeq:_*)
+      values() = mut.Set(newValues.map { t =>
+        val l = newLayout()
+        l.set(t)
+        l
+      }.toSeq:_*)
     }
 
     override def reset(): Unit = set(Set.empty)
@@ -180,9 +189,10 @@ trait Input {
         val key = evt.polyfill()._1
 
         def doUpdate(meh: Int) = {
-          val elem = fromString(jsThis.value.take(jsThis.value.size - meh))
+          val elem = fromString(jsThis.value.take(jsThis.value.length - meh))
           if(!current.now.toOption.exists(_.contains(elem))) {
-            val layout = newLayout(elem)
+            val layout = newLayout()
+            layout.set(elem)
             values.now += layout
             jsThis.value = ""
             values.recalc()
@@ -235,8 +245,8 @@ trait Input {
   object InputRx {
     //def autocomplete = ???
     def validate[T: StringConstructable](mods: Modifier *)= new ValidateNext[T](mods)()
-    def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: T => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
-    def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: T => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
+    def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
+    def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }
 
 }
