@@ -36,28 +36,24 @@ trait Checkbox {
       c.input.onchange = { (_:Event) => current.recalc() }
       c }.toBuffer
 
-    private val changeme : Var[Container[T]] = Var(buildFrom(Seq.empty))
 
-//    override lazy val current: rx.Rx[Try[Container[T]]] = rx.Rx { Try {
-//      buildFrom(checks.filter(_.input.checked).map(_.value))
-//    }}
-
-    private def meh(): Seq[T] = {
+    private def currentlyChecked(): Seq[T] = {
       checks.filter(_.input.checked).map(_.value)
     }
 
-    override lazy val current: Rx[Try[Container[T]]] = Rx { Try(changeme()) }
+    private var wat = 0
+    override val current: Rx[Try[Container[T]]] = Rx { println("RXING THING" + wat) ; wat += 1 ; Try { buildFrom(currentlyChecked()) }}
 
     override def set(values: Container[T]) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
       checked.foreach   { _.input.checked = true  }
       unchecked.foreach { _.input.checked = false }
-      changeme() = buildFrom(meh())
+      current.recalc()
     }
 
     override def reset(): Unit = {
       checks.foreach { _.input.checked = false }
-      changeme() = buildFrom(meh())
+      current.recalc()
     }
   }
 

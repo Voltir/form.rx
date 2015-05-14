@@ -45,11 +45,16 @@ trait Common {
 
     val values: rx.Var[collection.mutable.Buffer[Layout]] = rx.Var(collection.mutable.Buffer.empty)
 
-    override lazy val current: rx.Rx[Try[List[T]]] = rx.Rx { Try {
-      values().map { l =>
-        l.current().get
-      }.toList
-    }}
+    override lazy val current: rx.Rx[Try[List[T]]] = rx.Rx {
+      println("RX LIST LAYOUT CHANGING!")
+      println(values())
+      Try {
+        values.now.map { l =>
+          println("--" + l.current.now)
+          l.current().get
+        }.toList
+      }
+    }
 
     override def set(inp: List[T]): Unit = {
       values() = inp.map { f =>
