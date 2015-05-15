@@ -42,7 +42,7 @@ trait Checkbox {
     }
 
     private var wat = 0
-    override val current: Rx[Try[Container[T]]] = Rx { println("RXING THING" + wat) ; wat += 1 ; Try { buildFrom(currentlyChecked()) }}
+    override val current: Rx[Try[Container[T]]] = Rx { wat += 1 ; Try { buildFrom(currentlyChecked()) }}
 
     override def set(values: Container[T]) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))

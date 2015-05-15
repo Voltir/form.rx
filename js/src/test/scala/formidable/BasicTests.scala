@@ -39,14 +39,12 @@ object BasicTests extends TestSuite {
 
       val test = FormidableRx[ThingLayout,Thing]
 
-      println("####################### SET FOO #################")
       test.set(foo)
       //println("###### DONNNE ####")
       assert(test.foo.value == "A")
       assert(test.bar.value == "BB")
       assert(test.baz.value == "CCC")
 
-      println("####################### RESET #################")
       test.reset()
       assert(test.foo.value == "")
       assert(test.bar.value == "")

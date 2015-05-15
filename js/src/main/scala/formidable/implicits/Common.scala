@@ -34,7 +34,6 @@ trait Common {
 
     //For resetting vars, we cheat. The Formidable macro itself does the reset. We must ignore this call here.
     override def reset(inp: Var[Target]): Unit = {
-      println("RESET QUITE!")
       Unit
     }
   }
@@ -46,11 +45,8 @@ trait Common {
     val values: rx.Var[collection.mutable.Buffer[Layout]] = rx.Var(collection.mutable.Buffer.empty)
 
     override lazy val current: rx.Rx[Try[List[T]]] = rx.Rx {
-      println("RX LIST LAYOUT CHANGING!")
-      println(values())
       Try {
         values.now.map { l =>
-          println("--" + l.current.now)
           l.current().get
         }.toList
       }
