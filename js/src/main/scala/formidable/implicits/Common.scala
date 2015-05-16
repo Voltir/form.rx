@@ -46,7 +46,7 @@ trait Common {
 
     override lazy val current: rx.Rx[Try[List[T]]] = rx.Rx {
       Try {
-        values.now.map { l =>
+        values().map { l =>
           l.current().get
         }.toList
       }
