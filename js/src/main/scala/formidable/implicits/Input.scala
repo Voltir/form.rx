@@ -133,8 +133,10 @@ trait Input {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
         val key = evt.polyfill()._1
 
-        def doUpdate(meh: Int) = {
-          val elem = fromString(jsThis.value.take(jsThis.value.size - meh))
+        def doUpdate = {
+          evt.stopPropagation()
+          evt.preventDefault()
+          val elem = fromString(jsThis.value)
           val layout = newLayout()
           layout.set(elem)
           jsThis.value = ""
@@ -142,9 +144,9 @@ trait Input {
           values.recalc()
         }
 
-        if(key == KCode.Comma) doUpdate(1)
+        if(key == KCode.Comma) doUpdate
 
-        if(key == KCode.Enter) doUpdate(0)
+        if(key == KCode.Enter) doUpdate
 
         if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
           pop()
@@ -188,8 +190,10 @@ trait Input {
 
         val key = evt.polyfill()._1
 
-        def doUpdate(meh: Int) = {
-          val elem = fromString(jsThis.value.take(jsThis.value.length - meh))
+        def doUpdate = {
+          evt.stopPropagation()
+          evt.preventDefault()
+          val elem = fromString(jsThis.value)
           if(!current.now.toOption.exists(_.contains(elem))) {
             val layout = newLayout()
             layout.set(elem)
@@ -199,9 +203,9 @@ trait Input {
           }
         }
 
-        if(key == KCode.Comma) doUpdate(1)
+        if(key == KCode.Comma) doUpdate
 
-        if(key == KCode.Enter) doUpdate(0)
+        if(key == KCode.Enter) doUpdate
 
         if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
           pop()
