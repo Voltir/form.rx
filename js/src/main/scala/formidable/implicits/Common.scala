@@ -39,6 +39,17 @@ trait Common {
   }
   implicit def implicitVarBindRx[Target]: BindRx[Var[Target],Target] = new VarBindRx[Target]()
 
+  //Generic formidable to lift into lift a defined formidable into an Option type
+  class FormidableOptionBindRx[Target, F <: FormidableRx[Target]] extends BindRx[F,Option[Target]] {
+    override def bind(inp: F, value: Option[Target]) = {
+      value.foreach(inp.set)
+      inp.current.recalc()
+    }
+    override def unbind(inp: F): rx.Rx[Try[Option[Target]]] = Rx { Success(inp.current().toOption) }
+    override def reset(inp: F): Unit = inp.reset()
+  }
+  implicit def implicitFormidableOptionBindRx[Target, F <: FormidableRx[Target]]: BindRx[F,Option[Target]] = new FormidableOptionBindRx[Target,F]
+
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
   class RxLayoutList[T, Layout <: FormidableRx[T]](make: () => Layout) extends FormidableRx[List[T]] {
 

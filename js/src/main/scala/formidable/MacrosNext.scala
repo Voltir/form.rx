@@ -87,7 +87,7 @@ object MacrosNext {
 
         ..$varDefaultsMagic
 
-        val current: Rx[Try[$targetTpe]] = Rx {
+        val current: Rx[scala.util.Try[$targetTpe]] = Rx {
           if(isUpdating) {
             scala.util.Failure(LoadFailure)
            }

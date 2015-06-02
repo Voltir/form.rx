@@ -5,9 +5,6 @@ import formidable.{BindRx, KCode, KeyboardPolyfill, FormidableRx}
 import org.scalajs.dom
 import org.scalajs.dom.html
 import rx._
-import rx.core.Propagator
-
-import scala.collection.generic.CanBuildFrom
 import scala.scalajs.js
 import scala.scalajs.js.UndefOr
 import scala.util.{Failure, Success, Try}
@@ -18,8 +15,6 @@ import KeyboardPolyfill._
 
 trait Input {
   //Helper trait to shove Rx[Try[T]] into a dom.html.Input
-  case object Uninitialized extends Throwable("Uninitialized Field")
-
   trait InputRxDynamic[T] {
     private val KEY = "_inp_rx"
     protected def bindDynamic(inp: html.Input)(make: String => Try[T]): Var[Try[T]] = {
@@ -219,9 +214,9 @@ trait Input {
     ).render
   }
 
-  class ValidateNext[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
+  class Validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
 
-    private lazy val defaultValue = if(defaultToUninitialized) Failure(Uninitialized) else builder.parse("")  
+    private lazy val defaultValue = if(defaultToUninitialized) Failure(formidable.Uninitialized) else builder.parse("")
 
     private val _current: rx.Var[Try[T]] = rx.Var(defaultValue)
 
@@ -249,7 +244,7 @@ trait Input {
 
   object InputRx {
     //def autocomplete = ???
-    def validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier *) = new ValidateNext[T](defaultToUninitialized)(mods)
+    def validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier *) = new Validate[T](defaultToUninitialized)(mods)
     def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
     def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }

@@ -39,25 +39,25 @@ object Implicits {
   implicit val InputDoubleBinder = new InputNumericBinder[Double](_.toDouble)
 
   //Binders for T <=> Select element
-  class Opt[+T](val value: T)(mods: Modifier *) {
-    val option = scalatags.JsDom.all.option(mods)
-  }
-
-  object Opt {
-    def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
-  }
-
-  class SelectionOf[T](selectMods: Modifier *)(options: Opt[T] *) extends Formidable[T] {
-    val select = scalatags.JsDom.all.select(selectMods)(options.map(_.option):_*).render
-
-    override def unbuild(value: T): Unit = select.selectedIndex = options.indexWhere(_.value == value)
-
-    override def build(): Try[T] = Try { options(select.selectedIndex).value }
-  }
-
-  object SelectionOf {
-    def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionOf[T](selectMods)(options:_*)
-  }
+//  class Opt[+T](val value: T)(mods: Modifier *) {
+//    val option = scalatags.JsDom.all.option(mods)
+//  }
+//
+//  object Opt {
+//    def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
+//  }
+//
+//  class SelectionOf[T](selectMods: Modifier *)(options: Opt[T] *) extends Formidable[T] {
+//    val select = scalatags.JsDom.all.select(selectMods)(options.map(_.option):_*).render
+//
+//    override def unbuild(value: T): Unit = select.selectedIndex = options.indexWhere(_.value == value)
+//
+//    override def build(): Try[T] = Try { options(select.selectedIndex).value }
+//  }
+//
+//  object SelectionOf {
+//    def apply[T](selectMods: Modifier*)(options: Opt[T] *) = new SelectionOf[T](selectMods)(options:_*)
+//  }
 
   //Binders for T <=> Radio elements
   class Radio[+T](val value: T)(mods: Modifier *) {

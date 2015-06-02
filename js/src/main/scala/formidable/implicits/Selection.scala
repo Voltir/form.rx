@@ -1,15 +1,21 @@
 package formidable.implicits
 
 import formidable.FormidableRx
-import formidable.Implicits.{Radio, Opt}
 import org.scalajs.dom
-
 import rx._
 import scala.util.Try
 import scalatags.JsDom.all._
 
 trait Selection {
   //Binders for T <=> Select element
+  class Opt[+T](val value: T)(mods: Modifier *) {
+    val option = scalatags.JsDom.all.option(mods)
+  }
+
+  object Opt {
+    def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
+  }
+
   class SelectionRx[T](selectMods: Modifier *)(head: Opt[T], tail: Opt[T] *) extends FormidableRx[T] {
     private val options = collection.mutable.Buffer(head) ++ tail.toBuffer
     private val selected: rx.Var[T] = rx.Var(head.value)
