@@ -216,7 +216,7 @@ trait Input {
 
   class Validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
 
-    private lazy val defaultValue = if(defaultToUninitialized) Failure(formidable.Uninitialized) else builder.parse("")
+    private lazy val defaultValue = if(defaultToUninitialized) Failure(formidable.FormidableUninitialized) else builder.parse("")
 
     private val _current: rx.Var[Try[T]] = rx.Var(defaultValue)
 

@@ -1,11 +1,21 @@
 package formidable.implicits
 
-import formidable.FormidableRx
-import formidable.Implicits.Radio
+import formidable._
 import scala.util.Try
 
-
 trait RadioRx {
+  import org.scalajs.dom._
+  import scalatags.JsDom.all.{html => _, _}
+
+  //Wrapper for radio type inputs
+  class Radio[+T](val value: T)(mods: Modifier *) {
+    val input = scalatags.JsDom.all.input(`type`:="radio",mods).render
+  }
+
+  object Radio {
+    def apply[T](value: T)(mods: Modifier *) = new Radio(value)(mods)
+  }
+
   //Binders for T <=> Radio elements
   class RadioRx[T](name: String)(val head: Radio[T], val radios: Radio[T] *) extends FormidableRx[T] {
     private val selected: rx.Var[T] = rx.Var(head.value)

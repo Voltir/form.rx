@@ -1,7 +1,6 @@
 package formidable.implicits
 
-import formidable.FormidableRx
-import formidable.Implicits.Chk
+import formidable._
 import org.scalajs.dom._
 import scala.util.Try
 import scalatags.JsDom.all._
@@ -9,7 +8,15 @@ import rx._
 
 trait Checkbox {
 
-  //Basic checkbox as a bool
+  //Wrapper for checkbox type inputs
+  class Chk[+T](val value: T)(mods: Modifier *) {
+    val input = scalatags.JsDom.all.input(`type`:="checkbox",mods).render
+  }
+
+  object Chk {
+    def apply[T](value: T)(mods: Modifier *) = new Chk(value)(mods)
+  }
+
   class CheckboxBoolRx(default: Boolean)(mods: Modifier *) extends FormidableRx[Boolean] {
     val input = scalatags.JsDom.all.input(`type`:="checkbox", mods).render
     val current: rx.Rx[Try[Boolean]] = rx.Rx { Try(input.checked)}
