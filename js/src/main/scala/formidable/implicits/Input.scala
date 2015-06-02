@@ -219,10 +219,11 @@ trait Input {
     ).render
   }
 
+  class ValidateNext[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
 
-  class ValidateNext[T: StringConstructable](mods: Modifier*)(rxMods: (rx.Var[Try[T]] => Modifier)*) extends FormidableRx[T] {
+    private lazy val defaultValue = if(defaultToUninitialized) Failure(Uninitialized) else builder.parse("")  
 
-    private val _current: rx.Var[Try[T]] = rx.Var(Failure(Uninitialized))
+    private val _current: rx.Var[Try[T]] = rx.Var(defaultValue)
 
     private val builder = implicitly[StringConstructable[T]]
 
@@ -231,8 +232,7 @@ trait Input {
     lazy val input: org.scalajs.dom.html.Input = scalatags.JsDom.all.input(
       `type` := "text",
       onkeyup := { () => _current() = builder.parse(input.value) },
-      mods,
-      rxMods.map(_(_current))
+      mods
     ).render
 
     override def set(inp: T) = {
@@ -242,13 +242,14 @@ trait Input {
 
     override def reset(): Unit = {
       input.value = ""
-      _current() = Failure(Uninitialized)
+      _current() = defaultValue
     }
   }
 
+
   object InputRx {
     //def autocomplete = ???
-    def validate[T: StringConstructable](mods: Modifier *)= new ValidateNext[T](mods)()
+    def validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier *) = new ValidateNext[T](defaultToUninitialized)(mods)
     def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
     def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }
