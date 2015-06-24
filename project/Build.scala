@@ -8,7 +8,7 @@ object Build extends sbt.Build {
 
   val cross = crossProject.in(file(".")).settings(
     organization := "com.stabletech",
-    version := "0.0.7-SNAPSHOT",
+    version := "0.0.8-SNAPSHOT",
     scalaVersion := "2.11.6",
     name := "formidable",
     autoCompilerPlugins := true,
