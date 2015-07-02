@@ -65,6 +65,7 @@ trait Checkbox {
   }
 
   object CheckboxRx {
+    def bool(default: Boolean, modifiers: Modifier *) = new CheckboxBoolRx(default)(modifiers)
     def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBaseRx[T,Set](name)(_.toSet, c => v => c.contains(v))(checks:_*)
     def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBaseRx[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
   }
