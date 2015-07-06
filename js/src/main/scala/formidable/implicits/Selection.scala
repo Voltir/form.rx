@@ -53,7 +53,11 @@ trait Selection {
     }
 
     override def set(value: T): Unit = {
-      selectedIndex() = optionsRx.now.indexOf(value)
+      val setIndex = optionsRx.now.indexWhere(_.value == value)
+      if(setIndex >= 0) {
+        selectedIndex() = setIndex
+        select.selectedIndex = setIndex
+      }
     }
 
     override def reset(): Unit = {
