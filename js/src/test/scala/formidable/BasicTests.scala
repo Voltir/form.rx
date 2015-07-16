@@ -1,6 +1,5 @@
 package formidable
 
-import formidable.Implicits.Opt
 import utest._
 import scalatags.JsDom.all._
 import scala.util._
@@ -127,6 +126,8 @@ object BasicTests extends TestSuite {
       val test = FormidableRx[StuffLayout,Stuff]
 
       test.set(foo)
+      assert(test.foo.now == "A")
+      assert(test.bar.now == 42)
       test.bar() = 9000
       test.foo() = "omgdifferent"
       val newStuff = test.current.now.get
