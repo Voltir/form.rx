@@ -24,10 +24,18 @@ case class NotStrings(foo: Int, bar: Wrapped, baz: ChoiceLike)
 case class Stuff(foo: String, bar: Int)
 
 object BasicTests extends TestSuite {
+  import implicits.all._
+
+  val foo = Stuff("A",42)
+
+  trait StuffLayout {
+    val foo = Var("aBarTxt")
+    val bar = Var(999)
+  }
 
   def tests = TestSuite {
     'object3 {
-      import implicits.all._
+
       val foo = Thing("A","BB","CCC")
 
       trait ThingLayout {
@@ -102,7 +110,7 @@ object BasicTests extends TestSuite {
 
       trait NotStringLayout {
         val foo = input(`type`:="text").render
-        val bar = Var(Wrapped(42))//VarRx(Wrapped(42))
+        val bar = Var(Wrapped(42))
         val baz = SelectionRx[ChoiceLike]()(
           Opt(FirstChoice)(value:="first", "Yolo"),
           Opt(SecondChoice)(value:="second", "Booof"),
@@ -114,15 +122,8 @@ object BasicTests extends TestSuite {
       test.bar() = Wrapped(82828282)
       test.reset()
     }
+
     'vars {
-      import implicits.all._
-      val foo = Stuff("A",42)
-
-      trait StuffLayout {
-        val foo = Var("aBarTxt")
-        val bar = Var(999)
-      }
-
       val test = FormidableRx[StuffLayout,Stuff]
 
       test.set(foo)
@@ -136,6 +137,16 @@ object BasicTests extends TestSuite {
       test.reset()
       assert(test.foo.now == "aBarTxt")
       assert(test.bar.now == 999)
+    }
+
+    'innerRxDependencies {
+      val test = FormidableRx[StuffLayout,Stuff]
+      val barRx = Rx { test.bar() + 2 }
+      assert(barRx.now == 1001)
+      test.set(foo)
+      assert(barRx.now == 44)
+      test.reset()
+      assert(barRx.now == 1001)
     }
   }
 }

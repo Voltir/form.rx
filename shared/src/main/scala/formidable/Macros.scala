@@ -78,7 +78,7 @@ object Macros {
 
     val varResetMagic = rxVarAccessors.map { a =>
       val default = a.name.decodedName.toString + "Default"
-      q"this.$a.updateSilent(${TermName(default)})"
+      q"this.$a.update(${TermName(default)})"
     }
 
     c.Expr[Layout with FormidableRx[Target]](q"""
