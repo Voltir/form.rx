@@ -143,7 +143,7 @@ trait Input {
 
         if(key == KCode.Enter) doUpdate
 
-        if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
+        if(key == KCode.Backspace && jsThis.value == "" && values().nonEmpty) {
           pop()
         }
       }
@@ -161,21 +161,17 @@ trait Input {
     (val fromString: String => T)
     (val newLayout: () => Layout) extends FormidableRx[Set[T]] {
 
-    val values: rx.Var[mut.Set[Layout]] = rx.Var(mut.Set.empty)
+    val values: rx.Var[Set[Layout]] = rx.Var(Set.empty)
 
     def pop() = values() = values.now - values().last
 
-    lazy val current: rx.Rx[Try[Set[T]]] = rx.Rx { Try {
-      values().map(_.current().get).toSet
+    val current: rx.Rx[Try[Set[T]]] = rx.Rx { Try {
+      values().flatMap(_.current().toOption)
     }}
 
     override def set(newValues: Set[T]) = {
       values.now.foreach { r => r.current.kill() }
-      values() = mut.Set(newValues.map { t =>
-        val l = newLayout()
-        l.set(t)
-        l
-      }.toSeq:_*)
+      values() = newValues.map { t => val r = newLayout() ; r.set(t) ; r }
     }
 
     override def reset(): Unit = set(Set.empty)
@@ -185,24 +181,23 @@ trait Input {
 
         val key = evt.polyfill()._1
 
-        def doUpdate = {
+        def doUpdate(): Unit = {
           evt.stopPropagation()
           evt.preventDefault()
           val elem = fromString(jsThis.value)
           if(!current.now.toOption.exists(_.contains(elem))) {
             val layout = newLayout()
             layout.set(elem)
-            values.now += layout
             jsThis.value = ""
-            values.recalc()
+            values() = values.now + layout
           }
         }
 
-        if(key == KCode.Comma) doUpdate
+        if(key == KCode.Comma) doUpdate()
 
-        if(key == KCode.Enter) doUpdate
+        if(key == KCode.Enter) doUpdate()
 
-        if(key == KCode.Backspace && jsThis.value == "" && values().size > 0) {
+        if(key == KCode.Backspace && jsThis.value == "" && values().nonEmpty) {
           pop()
         }
       }

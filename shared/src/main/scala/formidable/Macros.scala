@@ -27,8 +27,8 @@ object Macros {
     val layoutNames = layoutAccessors.map(_.name.toString).toSet
     val targetNames = fields.map(_.name.toString).toSet
     val missing = targetNames.diff(layoutNames)
-    if(missing.size > 0) {
-      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n${missing.mkString("\n")}")
+    if(missing.nonEmpty) {
+      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n--${missing.mkString("\n--")}")
     }
 
     //Get subset of layout accessors that are rx.core.Var types
@@ -94,7 +94,7 @@ object Macros {
            }
           else {
             for(..$unmagic) yield {
-              $companion.apply(..${(0 until fields.size).map(i=>TermName("a"+i))})
+              $companion.apply(..${fields.indices.map(i=>TermName("a"+i))})
             }
           }
         }

@@ -1,5 +1,7 @@
 package formidable
 
+import org.scalajs.dom
+import org.scalajs.dom.raw.KeyboardEvent
 import utest._
 import scalatags.JsDom.all._
 import scala.util._
