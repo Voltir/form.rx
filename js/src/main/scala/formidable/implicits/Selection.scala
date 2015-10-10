@@ -65,7 +65,8 @@ trait Selection {
       onReset()
     }
 
-    private val watchOptions = Obs(optionsRx) {
+    //private val watchOptions = Obs(optionsRx) {
+    private val watchOptions = optionsRx.foreach { _ =>
       (0 until select.childElementCount).foreach { _ => select.remove(0) }
       optionsRx.now.foreach { opt =>
         select.add(opt.option.render)

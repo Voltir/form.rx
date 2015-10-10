@@ -32,7 +32,7 @@ object Macros {
     }
 
     //Get subset of layout accessors that are rx.core.Var types
-    val VAR_SYMBOL = typeOf[rx.core.Var[_]].typeSymbol
+    val VAR_SYMBOL = typeOf[rx.Var[_]].typeSymbol
     val rxVarAccessors = layoutAccessors.filter { a =>
       a.typeSignature match {
         case NullaryMethodType(TypeRef(_,VAR_SYMBOL, _ :: Nil)) => true
