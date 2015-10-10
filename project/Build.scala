@@ -8,11 +8,11 @@ object Build extends sbt.Build {
 
   val cross = crossProject.in(file(".")).settings(
     organization := "com.stabletech",
-    version := "0.0.9-SNAPSHOT",
+    version := "0.0.10-SNAPSHOT",
     scalaVersion := "2.11.7",
     name := "formidable",
     autoCompilerPlugins := true,
-    addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2"),
+    addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.3"),
     libraryDependencies ++= Seq(
       "com.lihaoyi" %%% "scalarx" % Versions.scalarx,
       "com.lihaoyi" %%% "scalatags" % Versions.scalatags,
@@ -44,9 +44,9 @@ object Build extends sbt.Build {
   val js = cross.js
   
   object Versions {
-    val scalajsDom = "0.8.0"
+    val scalajsDom = "0.8.2"
     val scalatags = "0.5.2"
-    val scalarx = "0.2.8"
+    val scalarx = "0.2.9-SNAPSHOT"
     val utest = "0.3.1"
   }
 }
