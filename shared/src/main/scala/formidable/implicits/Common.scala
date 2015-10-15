@@ -73,11 +73,17 @@ trait Common {
 
     override def reset(): Unit = {
       values() = collection.mutable.Buffer.empty
-
     }
 
-    def append(elem: Layout): Unit = {
-      values.now += elem
+    def append(): Unit = {
+      values.now += make()
+      values.recalc()
+    }
+
+    def append(t: T) = {
+      val r = make()
+      r.set(t)
+      values.now += r
       values.recalc()
     }
 
