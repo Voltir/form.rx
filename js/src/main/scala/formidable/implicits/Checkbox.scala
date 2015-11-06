@@ -64,9 +64,43 @@ trait Checkbox {
     }
   }
 
+  class DynamicCheckboxRx[T, Container[_] <: Traversable[_]]
+      (name: String)
+      (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
+      (checksRx: Rx[List[Chk[T]]])
+      extends FormidableRx[Container[T]] {
+
+    private def currentlyChecked(): Seq[T] = {
+      checksRx().filter(_.input.checked).map(_.value)
+    }
+
+    val current: Rx[Try[Container[T]]] = Rx{println("current rxing"); Try{buildFrom(currentlyChecked())}}
+
+    override def set(values: Container[T]) = {
+      val (checked, unchecked) = checksRx.now.partition(c => hasValue(values)(c.value))
+      checked.foreach   { _.input.checked = true  }
+      unchecked.foreach { _.input.checked = false }
+      current.recalc()
+    }
+
+    override def reset(): Unit = {
+      checksRx.now.foreach { _.input.checked = false }
+      current.recalc()
+    }
+
+    private val watchChecks = Obs(checksRx) {
+      checksRx.now.map { chk =>
+        chk.input.name = name
+        chk.input.onchange = { (_: Event) => current.recalc() }
+      }
+    }
+  }
+
   object CheckboxRx {
     def bool(default: Boolean, modifiers: Modifier *) = new CheckboxBoolRx(default)(modifiers)
     def set[T](name: String)(checks: Chk[T] *)    = new CheckboxBaseRx[T,Set](name)(_.toSet, c => v => c.contains(v))(checks:_*)
     def list[T](name: String)(checks: Chk[T] *)   = new CheckboxBaseRx[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
+    def dynamicSet[T](name: String)(checks: Rx[List[Chk[T]]]) =
+      new DynamicCheckboxRx[T, Set](name)(_.toSet, c => v => c.contains(v))(checks)
   }
 }

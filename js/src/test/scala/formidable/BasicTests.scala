@@ -154,3 +154,52 @@ object BasicTests extends TestSuite {
 }
 
 //todo test CheckboxBaseRx
+
+object CheckboxTests extends TestSuite {
+  import implicits.all._
+
+  case class Fruit(name: String)
+  case class FruitBasket(fruits: Set[Fruit])
+
+  val fruits = Set(
+    Fruit("apple"),
+    Fruit("banana"),
+    Fruit("pear")
+  )
+
+  val fruitOpts: Var[List[Chk[Fruit]]] = Var(List.empty)
+
+  trait FruitBasketLayout {
+    val fruits = CheckboxRx.dynamicSet[Fruit]("fruits")(fruitOpts)
+  }
+
+  def tests = TestSuite {
+    'dynamic {
+      val form = FormidableRx[FruitBasketLayout, FruitBasket]
+
+      // sanity
+      val currentChecks = fruitOpts.now
+      assert(currentChecks.isEmpty)
+
+      // sanity
+      val emptyBasket = form.current.now.get
+      assert(emptyBasket.fruits.isEmpty)
+
+      // update fruit options
+      fruitOpts() = fruits.map(f => Chk(f)()).toList
+      assert(fruitOpts.now.size == 3)
+
+      // ensure checkbox names match
+      val namesMatch = fruitOpts().forall(_.input.name == "fruits")
+      assert(namesMatch)
+
+      // set fruit form
+      form.fruits.set(fruits.tail)
+      assert(form.current.now.get.fruits.size == 2)
+
+      // reset all options
+      form.fruits.reset()
+      assert(form.current.now.get.fruits.size == 0)
+    }
+  }
+}
