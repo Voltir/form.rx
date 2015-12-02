@@ -9,7 +9,7 @@ import xerial.sbt.Sonatype.autoImport._
 
 object Build extends sbt.Build {
  
-  val versionV = "0.0.11-SNAPSHOT"
+  val versionV = "0.0.11"
  
   lazy val root = project
     .in(file("."))
