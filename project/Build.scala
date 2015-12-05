@@ -84,6 +84,6 @@ object Build extends sbt.Build {
     val scalatags = "0.5.2"
     val scalarx = "0.2.8"
     val utest = "0.3.1"
-    val likelib = "0.0.1-SNAPSHOT"
+    val likelib = "0.1.1"
   }
 }
