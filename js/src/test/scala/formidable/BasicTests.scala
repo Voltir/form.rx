@@ -3,6 +3,7 @@ package formidable
 import org.scalajs.dom
 import org.scalajs.dom.raw.KeyboardEvent
 import utest._
+import utest.ExecutionContext.RunNow
 import scalatags.JsDom.all._
 import scala.util._
 import rx._
@@ -37,7 +38,6 @@ object BasicTests extends TestSuite {
 
   def tests = TestSuite {
     'object3 {
-
       val foo = Thing("A","BB","CCC")
 
       trait ThingLayout {
@@ -153,8 +153,7 @@ object BasicTests extends TestSuite {
   }
 }
 
-//todo test CheckboxBaseRx
-
+////todo test CheckboxBaseRx
 object CheckboxTests extends TestSuite {
   import implicits.all._
 

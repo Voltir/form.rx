@@ -1,7 +1,7 @@
 package formidable.implicits
 
-import formidable.Typeclasses.StringConstructable
 import formidable.{BindRx, KCode, KeyboardPolyfill, FormidableRx}
+import likelib.StringTryLike
 import org.scalajs.dom
 import org.scalajs.dom.html
 import rx._
@@ -29,26 +29,24 @@ trait Input {
   }
 
   //Binder for dom.html.Input
-  class InputBindRx[Target: StringConstructable]
+  class InputBindRx[Target: StringTryLike]
       extends BindRx[dom.html.Input,Target]
       with InputRxDynamic[Target] {
     
-    private val builder = implicitly[StringConstructable[Target]]
-    
-    private val make = (s: String) => builder.parse(s)
+    private lazy val strLike = implicitly[StringTryLike[Target]]
 
     private def update(inp: dom.html.Input): Unit = {
-      val dynamicVar = bindDynamic(inp)(make)
-      dynamicVar() = make(inp.value)
+      val dynamicVar = bindDynamic(inp)(strLike.from)
+      dynamicVar() = strLike.from(inp.value)
     }
 
     override def bind(inp: dom.html.Input, value: Target): Unit = {
-      inp.value = builder.asString(value)
+      inp.value = strLike.to(value)
       update(inp)
     }
 
     override def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
-      bindDynamic(inp)(make)
+      bindDynamic(inp)(strLike.from)
     }
 
     override def reset(inp: dom.html.Input): Unit = {
@@ -57,45 +55,7 @@ trait Input {
     }
   }
 
-  implicit def inputBindRx[Target: StringConstructable]: BindRx[dom.html.Input,Target] = new InputBindRx[Target]
-
-  //Basic String Constructable Implicits
-  implicit object StringStringConstructable extends StringConstructable[String] {
-    def asString(inp: String): String = inp
-    def parse(txt: String): Try[String] = Success(txt)
-  }
-
-  implicit object IntStringConstructable extends StringConstructable[Int] {
-    def asString(inp: Int): String = inp.toString
-    def parse(txt: String): Try[Int] = Try(txt.toInt)
-  }
-
-  implicit object FloatStringConstructable extends StringConstructable[Float] {
-    def asString(inp: Float): String = inp.toString
-    def parse(txt: String): Try[Float] = Try(txt.toFloat)
-  }
-
-  implicit object LongStringConstructable extends StringConstructable[Long] {
-    def asString(inp: Long): String = inp.toString
-    def parse(txt: String): Try[Long] = Try(txt.toLong)
-  }
-
-  implicit object DoubleStringConstructable extends StringConstructable[Double] {
-    def asString(inp: Double): String = inp.toString
-    def parse(txt: String): Try[Double] = Try(txt.toDouble)
-  }
-
-  class OptStringConstructable[T: StringConstructable] extends StringConstructable[Option[T]] {
-    val builder = implicitly[StringConstructable[T]]
-    def asString(inp: Option[T]) = inp.map(builder.asString).getOrElse("")
-    def parse(txt: String): Try[Option[T]] = scala.util.Success {
-      if(txt.length == 0) None else builder.parse(txt).toOption
-    }
-  }
-
-  implicit def OptionStringConstructable[T: StringConstructable]: StringConstructable[Option[T]] = {
-    new OptStringConstructable[T]
-  }
+  implicit def inputBindRx[Target: StringTryLike]: BindRx[dom.html.Input,Target] = new InputBindRx[Target]
 
   //For List of Things (ie Tag Like)
   class TextRxBufferList[T, Layout <: FormidableRx[T]]
@@ -209,24 +169,26 @@ trait Input {
     ).render
   }
 
-  class Validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
+  class Validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
 
-    private lazy val defaultValue = if(defaultToUninitialized) Failure(formidable.FormidableUninitialized) else builder.parse("")
+    private lazy val defaultValue =
+      if(defaultToUninitialized) Failure(formidable.FormidableUninitialized)
+      else strLike.from("")
 
     private val _current: rx.Var[Try[T]] = rx.Var(defaultValue)
 
-    private val builder = implicitly[StringConstructable[T]]
+    private val strLike = implicitly[StringTryLike[T]]
 
     val current: rx.Rx[Try[T]] = rx.Rx(_current())
 
     lazy val input: org.scalajs.dom.html.Input = scalatags.JsDom.all.input(
       `type` := "text",
-      onkeyup := { () => _current() = builder.parse(input.value) },
+      onkeyup := { () => _current() = strLike.from(input.value) },
       mods
     ).render
 
     override def set(inp: T) = {
-      input.value = builder.asString(inp)
+      input.value = strLike.to(inp)
       _current() = Success(inp)
     }
 
@@ -236,7 +198,7 @@ trait Input {
     }
   }
 
-  class ValidateMaybe[T: StringConstructable](mods: Modifier*) extends FormidableRx[Option[T]] {
+  class ValidateMaybe[T: StringTryLike](mods: Modifier*) extends FormidableRx[Option[T]] {
 
     private val wrapped = new Validate[T](true)(mods)
 
@@ -259,8 +221,8 @@ trait Input {
 
   object InputRx {
     //def autocomplete = ???
-    def validate[T: StringConstructable](defaultToUninitialized: Boolean)(mods: Modifier *) = new Validate[T](defaultToUninitialized)(mods)
-    def validateMaybe[T: StringConstructable](mods: Modifier *) = new ValidateMaybe[T](mods)
+    def validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier *) = new Validate[T](defaultToUninitialized)(mods)
+    def validateMaybe[T: StringTryLike](mods: Modifier *) = new ValidateMaybe[T](mods)
     def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
     def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }

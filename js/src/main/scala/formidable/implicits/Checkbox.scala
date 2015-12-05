@@ -74,7 +74,7 @@ trait Checkbox {
       checksRx().filter(_.input.checked).map(_.value)
     }
 
-    val current: Rx[Try[Container[T]]] = Rx{println("current rxing"); Try{buildFrom(currentlyChecked())}}
+    val current: Rx[Try[Container[T]]] = Rx{Try{buildFrom(currentlyChecked())}}
 
     override def set(values: Container[T]) = {
       val (checked, unchecked) = checksRx.now.partition(c => hasValue(values)(c.value))

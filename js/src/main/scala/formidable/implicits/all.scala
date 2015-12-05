@@ -6,7 +6,8 @@ object all
   with TextArea
   with Checkbox
   with RadioRx
-  with Selection {
+  with Selection
+  with LowPriorityStringLikes {
 }
 
 

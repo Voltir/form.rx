@@ -1,7 +1,7 @@
 package formidable.implicits
 
 import formidable.BindRx
-import formidable.Typeclasses.StringConstructable
+import likelib.StringTryLike
 import org.scalajs.dom
 import org.scalajs.dom.html
 import rx._
@@ -26,26 +26,24 @@ trait TextArea {
   }
 
   //Binder for dom.html.Input
-  class TextAreaBindRx[Target: StringConstructable]
+  class TextAreaBindRx[Target: StringTryLike]
     extends BindRx[dom.html.TextArea,Target]
     with TextAreaRxDynamic[Target] {
 
-    val builder = implicitly[StringConstructable[Target]]
-
-    private val make = (s: String) => builder.parse(s)
+    val strLike = implicitly[StringTryLike[Target]]
 
     private def update(inp: dom.html.TextArea): Unit = {
-      val dynamicVar = bindDynamic(inp)(make)
-      dynamicVar() = make(inp.value)
+      val dynamicVar = bindDynamic(inp)(strLike.from)
+      dynamicVar() = strLike.from(inp.value)
     }
 
     override def bind(inp: dom.html.TextArea, value: Target): Unit = {
-      inp.value = builder.asString(value)
+      inp.value = strLike.to(value)
       update(inp)
     }
 
     override def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
-      bindDynamic(inp)(make)
+      bindDynamic(inp)(strLike.from)
     }
 
     override def reset(inp: dom.html.TextArea): Unit = {
@@ -54,5 +52,5 @@ trait TextArea {
     }
   }
 
-  implicit def textAreaBindRx[Target: StringConstructable]: BindRx[dom.html.TextArea,Target] = new TextAreaBindRx[Target]
+  implicit def textAreaBindRx[Target: StringTryLike]: BindRx[dom.html.TextArea,Target] = new TextAreaBindRx[Target]
 }
