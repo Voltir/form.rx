@@ -171,13 +171,13 @@ trait Input {
 
   class Validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
 
+    private val strLike = implicitly[StringTryLike[T]]
+
     private lazy val defaultValue =
       if(defaultToUninitialized) Failure(formidable.FormidableUninitialized)
       else strLike.from("")
 
     private val _current: rx.Var[Try[T]] = rx.Var(defaultValue)
-
-    private val strLike = implicitly[StringTryLike[T]]
 
     val current: rx.Rx[Try[T]] = rx.Rx(_current())
 
