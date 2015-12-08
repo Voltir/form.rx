@@ -24,11 +24,10 @@ object Build extends sbt.Build {
       publish := {},
       publishLocal := {}
     )
-    .enablePlugins(Sonatype)
     .aggregate(crossJS, crossJVM)
 
   lazy val cross = crossProject.in(file("."))
-    .enablePlugins(ScalaJSPlugin)
+    .enablePlugins(ScalaJSPlugin,Sonatype)
     .settings(commonSettings:_*)
     .settings(
       addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.3"),
@@ -71,7 +70,7 @@ object Build extends sbt.Build {
       )
     ).jsSettings(
       preLinkJSEnv := PhantomJSEnv().value,
-      scalaJSStage in Test := FullOptStage
+      scalaJSStage in Test := FullOptStage,
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom
       )
