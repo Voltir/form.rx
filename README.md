@@ -6,7 +6,7 @@ Getting Started
 ==============
 
 ```scala
- "com.stabletechs" %%% "formidable" % "0.0.10"
+ "com.stabletechs" %%% "formidable" % "0.0.11"
 ```
 formidable is only compiled for Scala.js 0.6+
 
