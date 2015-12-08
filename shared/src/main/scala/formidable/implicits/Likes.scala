@@ -36,4 +36,12 @@ trait LowPriorityStringLikes extends ReallyLowPriorityStringLikes {
     override def to(inp: Float): String = inp.toString
     override def from(txt: String): Try[Float] = Try(txt.toLong)
   }
+
+  implicit def OptLike[T: StringTryLike] = new StringTryLike[Option[T]] {
+    override def to(inp: Option[T]) = inp.map(implicitly[StringTryLike[T]].to).getOrElse("")
+    override def from(txt: String) = {
+      if(txt.length == 0) scala.util.Success(Option.empty[T])
+      else implicitly[StringTryLike[T]].from(txt).map(Option.apply)
+    }
+  }
 }
