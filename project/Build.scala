@@ -10,11 +10,11 @@ import xerial.sbt.Sonatype.autoImport._
 object Build extends sbt.Build {
 
   val commonSettings = Seq(
-    version := "0.0.11-SNAPSHOT",
+    version := "0.0.11",
     name := "formidable",
     scalaVersion := "2.11.7",
     organization := "com.stabletechs",
-    sonatypeProfileName := "com.stabletechs"
+    testFrameworks += new TestFramework("utest.runner.Framework")
   )
 
   lazy val root = project
@@ -39,9 +39,6 @@ object Build extends sbt.Build {
         "com.lihaoyi" %%% "utest" % Versions.utest % "test",
         "org.scala-lang" % "scala-reflect" % scalaVersion.value
       ),
-      testFrameworks += new TestFramework("utest.runner.Framework"),
-      homepage := Some(url("http://stabletechs.com/")),
-      licenses += ("MIT License", url("http://www.opensource.org/licenses/mit-license.php")),
       scmInfo := Some(ScmInfo(
         url("https://github.com/Voltir/formidable"),
         "scm:git:git@github.com/Voltir/formidable.git",
@@ -55,6 +52,9 @@ object Build extends sbt.Build {
         else
           Some("releases" at nexus + "service/local/staging/deploy/maven2")
       },
+      sonatypeProfileName := "com.stabletechs",
+      homepage := Some(url("http://stabletechs.com/")),
+      licenses += ("MIT License", url("http://www.opensource.org/licenses/mit-license.php")),
       pomExtra :=
         <developers>
           <developer>
@@ -71,6 +71,7 @@ object Build extends sbt.Build {
       )
     ).jsSettings(
       preLinkJSEnv := PhantomJSEnv().value,
+      scalaJSStage in Test := FullOptStage
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom
       )
