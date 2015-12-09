@@ -10,7 +10,7 @@ import xerial.sbt.Sonatype.autoImport._
 object Build extends sbt.Build {
 
   val commonSettings = Seq(
-    version := "0.0.11",
+    version := "0.0.12",
     name := "formidable",
     scalaVersion := "2.11.7",
     organization := "com.stabletechs",
@@ -69,7 +69,8 @@ object Build extends sbt.Build {
         "com.lihaoyi" %% "acyclic" % "0.1.2"
       )
     ).jsSettings(
-      preLinkJSEnv := PhantomJSEnv().value,
+    jsDependencies += RuntimeDOM % "test",
+    preLinkJSEnv := PhantomJSEnv().value,
       scalaJSStage in Test := FullOptStage,
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom

@@ -5,7 +5,7 @@ object all
   with Input
   with TextArea
   with Checkbox
-  with RadioRx
+  with Radio
   with Selection
   with LowPriorityStringLikes {
 }

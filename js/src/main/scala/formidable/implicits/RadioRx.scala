@@ -3,7 +3,7 @@ package formidable.implicits
 import formidable._
 import scala.util.Try
 
-trait RadioRx {
+trait Radio {
   import org.scalajs.dom._
   import scalatags.JsDom.all.{html => _, _}
 
@@ -17,14 +17,22 @@ trait RadioRx {
   }
 
   //Binders for T <=> Radio elements
-  class RadioRx[T](name: String)(val head: Radio[T], val radios: Radio[T] *) extends FormidableRx[T] {
+  class RadioRx[T](name: String)(val head: Radio[T], val tail: Radio[T] *) extends FormidableRx[T] {
     private val selected: rx.Var[T] = rx.Var(head.value)
-    private val _all = head :: radios.toList
-    _all.foreach(_.input.name = name)
 
-    override val current: rx.Rx[Try[T]] = rx.Rx { Try(selected()) }
+    override val current: rx.Rx[Try[T]] = rx.Rx {
+      selected()
+      selected.toTry
+    }
 
-    override def set(value: T): Unit = _all.find(_.value == value).foreach { r =>
+    val radios = (head :: tail.toList).map { r =>
+      r.input.name = name
+      r.input.onchange = { (_:Event) => selected() = r.value }
+      r
+    }.toBuffer
+
+
+    override def set(value: T): Unit = radios.find(_.value == value).foreach { r =>
       r.input.checked = true
       selected() = r.value
     }

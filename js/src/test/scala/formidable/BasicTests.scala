@@ -153,7 +153,6 @@ object BasicTests extends TestSuite {
   }
 }
 
-////todo test CheckboxBaseRx
 object CheckboxTests extends TestSuite {
   import implicits.all._
 
@@ -201,4 +200,30 @@ object CheckboxTests extends TestSuite {
       assert(form.current.now.get.fruits.size == 0)
     }
   }
+}
+
+object RadioTests extends TestSuite {
+  import implicits.all._
+
+  case class SomeChoice(choice: ChoiceLike)
+
+  trait SomeChoiceLayout {
+    val choice = RadioRx[ChoiceLike]("choices")(
+      Radio(FirstChoice)(),
+      Radio(SecondChoice)(),
+      Radio(ThirdChoice("foo", 42))()
+    )
+  }
+
+  def tests = TestSuite {
+    'radio {
+      val form = FormidableRx[SomeChoiceLayout,SomeChoice]
+
+      assert(form.choice.current.now.get == FirstChoice)
+
+      form.set(SomeChoice(ThirdChoice("foo",42)))
+      assert(form.choice.current.now.get == ThirdChoice("foo",42))
+    }
+  }
+
 }

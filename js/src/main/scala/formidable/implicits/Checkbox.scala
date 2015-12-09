@@ -38,18 +38,17 @@ trait Checkbox {
       (name: String)
       (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
       (checks: Chk[T] *) extends FormidableRx[Container[T]] {
+
+    override val current: Rx[Try[Container[T]]] = Rx { Try { buildFrom(currentlyChecked()) }}
+
     val checkboxes = checks.map { c =>
       c.input.name = name
       c.input.onchange = { (_:Event) => current.recalc() }
       c }.toBuffer
 
-
     private def currentlyChecked(): Seq[T] = {
       checks.filter(_.input.checked).map(_.value)
     }
-
-    private var wat = 0
-    override val current: Rx[Try[Container[T]]] = Rx { wat += 1 ; Try { buildFrom(currentlyChecked()) }}
 
     override def set(values: Container[T]) = {
       val (checked,unchecked) = checks.partition(c => hasValue(values)(c.value))
