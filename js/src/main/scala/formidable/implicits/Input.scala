@@ -198,31 +198,9 @@ trait Input {
     }
   }
 
-  class ValidateMaybe[T: StringTryLike](mods: Modifier*) extends FormidableRx[Option[T]] {
-
-    private val wrapped = new Validate[T](true)(mods)
-
-    override val current: rx.Rx[Try[Option[T]]] = Rx {
-      wrapped.current()
-      if(input.value == "") Success(None)
-      else wrapped.current().map(Option.apply)
-    }
-
-    lazy val input: org.scalajs.dom.html.Input = wrapped.input
-
-    override def set(inp: Option[T]) = {
-      if(inp.isEmpty) wrapped.reset()
-      else wrapped.set(inp.get)
-    }
-
-    override def reset(): Unit = wrapped.reset()
-  }
-
-
   object InputRx {
     //def autocomplete = ???
     def validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier *) = new Validate[T](defaultToUninitialized)(mods)
-    def validateMaybe[T: StringTryLike](mods: Modifier *) = new ValidateMaybe[T](mods)
     def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
     def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }

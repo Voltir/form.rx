@@ -1,5 +1,6 @@
 package formidable.implicits
 
+import rx._
 import formidable._
 import scala.util.Try
 
@@ -42,7 +43,33 @@ trait Radio {
     }
   }
 
+  class DynamicRadioRx[T](name: String)(radiosRx: Rx[List[Radio[T]]]) extends FormidableRx[T] {
+
+    val current: Rx[Try[T]] = Rx {
+      radiosRx()
+        .find(_.input.checked)
+        .map(r => scala.util.Success(r.value))
+        .getOrElse(scala.util.Failure(FormidableUninitialized))
+    }
+
+    def set(value: T) = {
+      radiosRx.now.filter(_.value == value).foreach(_.input.checked = true)
+    }
+
+    def reset() = {
+      radiosRx.now.foreach(_.input.checked = false)
+    }
+
+    private val watchRadios = Obs(radiosRx) {
+      radiosRx.now.foreach { r =>
+        r.input.name = name
+        r.input.onchange = { (_: Event) => current.recalc() }
+      }
+    }
+  }
+
   object RadioRx {
     def apply[T](name: String)(head: Radio[T], radios: Radio[T] *) = new RadioRx[T](name)(head,radios.toList:_*)
+    def dynamic[T](name: String)(radiosRx: Rx[List[Radio[T]]]) = new DynamicRadioRx[T](name)(radiosRx)
   }
 }

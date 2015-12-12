@@ -88,7 +88,7 @@ trait Checkbox {
     }
 
     private val watchChecks = Obs(checksRx) {
-      checksRx.now.map { chk =>
+      checksRx.now.foreach { chk =>
         chk.input.name = name
         chk.input.onchange = { (_: Event) => current.recalc() }
       }
