@@ -65,12 +65,12 @@ trait Selection {
       onReset()
     }
 
-    private val watchOptions = Obs(optionsRx) {
+    private val watchOptions = optionsRx.foreach { now =>
       (0 until select.childElementCount).foreach { _ => select.remove(0) }
-      optionsRx.now.foreach { opt =>
+      now.foreach { opt =>
         select.add(opt.option.render)
       }
-      if(optionsRx.now.size <= selectedIndex.now) selectedIndex() = 0
+      if(now.size <= selectedIndex.now) selectedIndex() = 0
       else {
         select.selectedIndex = selectedIndex.now
         current.recalc()

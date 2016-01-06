@@ -10,7 +10,7 @@ import xerial.sbt.Sonatype.autoImport._
 object Build extends sbt.Build {
 
   val commonSettings = Seq(
-    version := "0.0.13-SNAPSHOT",
+    version := "0.1.0-SNAPSHOT",
     name := "formidable",
     scalaVersion := "2.11.7",
     organization := "com.stabletechs",
@@ -83,7 +83,7 @@ object Build extends sbt.Build {
   object Versions {
     val scalajsDom = "0.8.2"
     val scalatags = "0.5.2"
-    val scalarx = "0.2.8"
+    val scalarx = "0.3.0-SNAPSHOT"
     val utest = "0.3.1"
     val likelib = "0.1.1"
   }

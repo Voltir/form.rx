@@ -1,7 +1,5 @@
 package formidable
 
-import rx._
-
 import scala.reflect.macros._
 import scala.language.experimental.macros
 
@@ -32,7 +30,7 @@ object Macros {
     }
 
     //Get subset of layout accessors that are rx.core.Var types
-    val VAR_SYMBOL = typeOf[rx.core.Var[_]].typeSymbol
+    val VAR_SYMBOL = typeOf[rx.Var[_]].typeSymbol
     val rxVarAccessors = layoutAccessors.filter { a =>
       a.typeSignature match {
         case NullaryMethodType(TypeRef(_,VAR_SYMBOL, _ :: Nil)) => true
@@ -88,7 +86,7 @@ object Macros {
 
         ..$varDefaultsMagic
 
-        val current: Rx[scala.util.Try[$targetTpe]] = Rx {
+        val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
           if(isUpdating) {
             scala.util.Failure(formidable.FormidableProcessingFailure)
            }

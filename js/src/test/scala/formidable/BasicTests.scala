@@ -1,11 +1,8 @@
 package formidable
 
-import org.scalajs.dom
-import org.scalajs.dom.raw.KeyboardEvent
 import utest._
-import utest.ExecutionContext.RunNow
+import scala.scalajs.js
 import scalatags.JsDom.all._
-import scala.util._
 import rx._
 
 //object3 test
@@ -158,8 +155,9 @@ object CheckboxTests extends TestSuite {
 
   case class Fruit(name: String)
   case class FruitBasket(fruits: Set[Fruit])
+  case class FruitList(fruits: List[Fruit])
 
-  val fruits = Set(
+  val allFruits = Set(
     Fruit("apple"),
     Fruit("banana"),
     Fruit("pear")
@@ -167,13 +165,45 @@ object CheckboxTests extends TestSuite {
 
   val fruitOpts: Var[List[Chk[Fruit]]] = Var(List.empty)
 
-  trait FruitBasketLayout {
+  trait FruitListLayout {
+    val fruits = CheckboxRx.list[Fruit]("fruits")(allFruits.toList.map(f => Chk(f)()):_*)
+  }
+
+  trait FruitBasketLayout1 {
+    val fruits = CheckboxRx.set[Fruit]("fruits")(allFruits.toList.map(f => Chk(f)()):_*)
+  }
+
+  trait FruitBasketLayout2 {
     val fruits = CheckboxRx.dynamicSet[Fruit]("fruits")(fruitOpts)
   }
 
   def tests = TestSuite {
-    'dynamic {
-      val form = FormidableRx[FruitBasketLayout, FruitBasket]
+    'list {
+      val form = FormidableRx[FruitListLayout, FruitList]
+
+      // sanity
+      assert(form.current.now.get.fruits.isEmpty)
+      assert(form.fruits.checkboxes.size == 3)
+
+      form.fruits.checkboxes.foreach(_.input.checked = true)
+      form.fruits.current.recalc()
+      assert(form.current.now.get.fruits.size == 3)
+    }
+
+    'set {
+      val form = FormidableRx[FruitBasketLayout1, FruitBasket]
+
+      // sanity
+      assert(form.current.now.get.fruits.isEmpty)
+      assert(form.fruits.checkboxes.size == 3)
+
+      form.fruits.checkboxes.foreach(_.input.checked = true)
+      form.fruits.current.recalc()
+      assert(form.current.now.get.fruits.size == 3)
+    }
+
+    'dynamicSet {
+      val form = FormidableRx[FruitBasketLayout2, FruitBasket]
 
       // sanity
       val currentChecks = fruitOpts.now
@@ -184,20 +214,20 @@ object CheckboxTests extends TestSuite {
       assert(emptyBasket.fruits.isEmpty)
 
       // update fruit options
-      fruitOpts() = fruits.map(f => Chk(f)()).toList
+      fruitOpts() = allFruits.map(f => Chk(f)()).toList
       assert(fruitOpts.now.size == 3)
 
       // ensure checkbox names match
-      val namesMatch = fruitOpts().forall(_.input.name == "fruits")
+      val namesMatch = fruitOpts.now.forall(_.input.name == "fruits")
       assert(namesMatch)
 
       // set fruit form
-      form.fruits.set(fruits.tail)
+      form.fruits.set(allFruits.tail)
       assert(form.current.now.get.fruits.size == 2)
 
       // reset all options
       form.fruits.reset()
-      assert(form.current.now.get.fruits.size == 0)
+      assert(form.current.now.get.fruits.isEmpty)
     }
   }
 }

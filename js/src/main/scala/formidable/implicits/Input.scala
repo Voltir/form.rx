@@ -45,7 +45,7 @@ trait Input {
       update(inp)
     }
 
-    override def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
+    override def unbind(inp: dom.html.Input): rx.Node[Try[Target]] = {
       bindDynamic(inp)(strLike.from)
     }
 
@@ -96,7 +96,7 @@ trait Input {
           layout.set(elem)
           jsThis.value = ""
           values.now.append(layout)
-          values.recalc()
+          values.propagate()
         }
 
         if(key == KCode.Comma) doUpdate

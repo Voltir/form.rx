@@ -21,10 +21,7 @@ trait Radio {
   class RadioRx[T](name: String)(val head: Radio[T], val tail: Radio[T] *) extends FormidableRx[T] {
     private val selected: rx.Var[T] = rx.Var(head.value)
 
-    override val current: rx.Rx[Try[T]] = rx.Rx {
-      selected()
-      selected.toTry
-    }
+    override val current: rx.Rx[Try[T]] = selected.map(s => scala.util.Success(s))
 
     val radios = (head :: tail.toList).map { r =>
       r.input.name = name
@@ -45,12 +42,11 @@ trait Radio {
 
   class DynamicRadioRx[T](name: String)(radiosRx: Rx[List[Radio[T]]]) extends FormidableRx[T] {
 
-    val current: Rx[Try[T]] = Rx {
-      radiosRx()
-        .find(_.input.checked)
-        .map(r => scala.util.Success(r.value))
-        .getOrElse(scala.util.Failure(FormidableUninitialized))
-    }
+    val current: Rx[Try[T]] = radiosRx.map(
+      _.find(_.input.checked)
+      .map(r => scala.util.Success(r.value))
+      .getOrElse(scala.util.Failure(FormidableUninitialized))
+    )
 
     def set(value: T) = {
       radiosRx.now.filter(_.value == value).foreach(_.input.checked = true)
@@ -60,8 +56,8 @@ trait Radio {
       radiosRx.now.foreach(_.input.checked = false)
     }
 
-    private val watchRadios = Obs(radiosRx) {
-      radiosRx.now.foreach { r =>
+    private val watchRadios = radiosRx.foreach { rs =>
+      rs.foreach { r =>
         r.input.name = name
         r.input.onchange = { (_: Event) => current.recalc() }
       }
