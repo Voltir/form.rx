@@ -23,8 +23,36 @@ case class NotStrings(foo: Int, bar: Wrapped, baz: ChoiceLike)
 //Testing Var resets
 case class Stuff(foo: String, bar: Int)
 
+object Testz {
+  import implicits.all._
+  trait Other { def other: Int = 42 }
+  println("!!!")
+  class ThingLayout(implicit ctx: RxCtx) extends LayoutFor[Thing] with Other {
+    val foo = Var("")
+    val bar = Var("")
+    val baz = Var("")
+  }
+
+  //class MehLayout extends LayoutFor[Int]
+
+  println("????")
+  val formz = FormidableRx.apply2[Thing,ThingLayout]
+
+  println(formz.other)
+
+  println("YAY: " + formz.current.now)
+  formz.bar() = "AIEEE"
+  println(formz.current.now)
+  formz.reset()
+  println(formz.current.now)
+  //formz.reset()
+}
+
 object BasicTests extends TestSuite {
   import implicits.all._
+
+  println(Testz.formz)
+  implicit val testctx = RxCtx.safe()
 
   val foo = Stuff("A",42)
 
@@ -153,6 +181,8 @@ object BasicTests extends TestSuite {
 object CheckboxTests extends TestSuite {
   import implicits.all._
 
+  implicit val testctx = RxCtx.safe()
+
   case class Fruit(name: String)
   case class FruitBasket(fruits: Set[Fruit])
   case class FruitList(fruits: List[Fruit])
@@ -234,6 +264,8 @@ object CheckboxTests extends TestSuite {
 
 object RadioTests extends TestSuite {
   import implicits.all._
+
+  implicit val testctx = RxCtx.safe()
 
   case class SomeChoice(choice: ChoiceLike)
 

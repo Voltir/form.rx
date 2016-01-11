@@ -18,7 +18,10 @@ trait Radio {
   }
 
   //Binders for T <=> Radio elements
-  class RadioRx[T](name: String)(val head: Radio[T], val tail: Radio[T] *) extends FormidableRx[T] {
+  class RadioRx[T]
+      (name: String)
+      (val head: Radio[T], val tail: Radio[T] *)
+      (implicit ctx: RxCtx) extends FormidableRx[T] {
     private val selected: rx.Var[T] = rx.Var(head.value)
 
     override val current: rx.Rx[Try[T]] = selected.map(s => scala.util.Success(s))
@@ -40,7 +43,10 @@ trait Radio {
     }
   }
 
-  class DynamicRadioRx[T](name: String)(radiosRx: Rx[List[Radio[T]]]) extends FormidableRx[T] {
+  class DynamicRadioRx[T]
+      (name: String)
+      (radiosRx: Rx[List[Radio[T]]])
+      (implicit ctx: RxCtx) extends FormidableRx[T] {
 
     val current: Rx[Try[T]] = radiosRx.map(
       _.find(_.input.checked)
@@ -65,7 +71,10 @@ trait Radio {
   }
 
   object RadioRx {
-    def apply[T](name: String)(head: Radio[T], radios: Radio[T] *) = new RadioRx[T](name)(head,radios.toList:_*)
-    def dynamic[T](name: String)(radiosRx: Rx[List[Radio[T]]]) = new DynamicRadioRx[T](name)(radiosRx)
+    def apply[T](name: String)(head: Radio[T], radios: Radio[T] *)(implicit ctx: RxCtx) =
+      new RadioRx[T](name)(head,radios.toList:_*)
+
+    def dynamic[T](name: String)(radiosRx: Rx[List[Radio[T]]])(implicit ctx: RxCtx) =
+      new DynamicRadioRx[T](name)(radiosRx)
   }
 }

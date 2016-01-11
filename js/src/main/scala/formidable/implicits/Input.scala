@@ -14,24 +14,11 @@ import collection.{ mutable => mut }
 import KeyboardPolyfill._
 
 trait Input {
-  //Helper trait to shove Rx[Try[T]] into a dom.html.Input
-  trait InputRxDynamic[T] {
-    private val KEY = "_inp_rx"
-    protected def bindDynamic(inp: html.Input)(make: String => Try[T]): Var[Try[T]] = {
-      val bound = inp.asInstanceOf[js.Dynamic].selectDynamic(KEY).asInstanceOf[UndefOr[Var[Try[T]]]]
-      bound.getOrElse {
-        val result: Var[Try[T]] = Var(make(inp.value))
-        inp.onkeyup = (ev:dom.KeyboardEvent) => result() = make(inp.value)
-        inp.asInstanceOf[js.Dynamic].updateDynamic(KEY)(result.asInstanceOf[js.Any])
-        result
-      }
-    }
-  }
 
   //Binder for dom.html.Input
   class InputBindRx[Target: StringTryLike]
       extends BindRx[dom.html.Input,Target]
-      with InputRxDynamic[Target] {
+      with BindDynamic[Target] {
     
     private lazy val strLike = implicitly[StringTryLike[Target]]
 
@@ -61,7 +48,8 @@ trait Input {
   class TextRxBufferList[T, Layout <: FormidableRx[T]]
       (val inputTag: TypedTag[dom.html.Input])
       (val fromString: String => T)
-      (val newLayout: () => Layout) extends FormidableRx[List[T]] {
+      (val newLayout: () => Layout)
+      (implicit ctx: RxCtx) extends FormidableRx[List[T]] {
 
     val values: rx.Var[mut.Buffer[Layout]] = rx.Var(mut.Buffer.empty)
 
@@ -117,9 +105,10 @@ trait Input {
 
   //For Set of Things (ie Tag Like)
   class TextRxSet[T, Layout <: FormidableRx[T]]
-    (val inputTag: TypedTag[dom.html.Input])
-    (val fromString: String => T)
-    (val newLayout: () => Layout) extends FormidableRx[Set[T]] {
+      (val inputTag: TypedTag[dom.html.Input])
+      (val fromString: String => T)
+      (val newLayout: () => Layout)
+      (implicit ctx: RxCtx) extends FormidableRx[Set[T]] {
 
     val values: rx.Var[Set[Layout]] = rx.Var(Set.empty)
 
@@ -169,7 +158,10 @@ trait Input {
     ).render
   }
 
-  class Validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier*) extends FormidableRx[T] {
+  class Validate[T: StringTryLike]
+      (defaultToUninitialized: Boolean)
+      (mods: Modifier*)
+      (implicit ctx: RxCtx) extends FormidableRx[T] {
 
     private val strLike = implicitly[StringTryLike[T]]
 
@@ -200,9 +192,25 @@ trait Input {
 
   object InputRx {
     //def autocomplete = ???
-    def validate[T: StringTryLike](defaultToUninitialized: Boolean)(mods: Modifier *) = new Validate[T](defaultToUninitialized)(mods)
-    def set[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
-    def list[T, Layout <: FormidableRx[T]](inputTag: TypedTag[dom.html.Input])(fromString: String => T)(newLayout: () => Layout) = new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
+    def validate[T: StringTryLike]
+        (defaultToUninitialized: Boolean)
+        (mods: Modifier *)
+        (implicit ctx: RxCtx) =
+      new Validate[T](defaultToUninitialized)(mods)
+
+    def set[T, Layout <: FormidableRx[T]]
+        (inputTag: TypedTag[dom.html.Input])
+        (fromString: String => T)
+        (newLayout: () => Layout)
+        (implicit ctx: RxCtx) =
+      new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
+
+    def list[T, Layout <: FormidableRx[T]]
+        (inputTag: TypedTag[dom.html.Input])
+        (fromString: String => T)
+        (newLayout: () => Layout)
+        (implicit ctx: RxCtx) =
+      new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }
 
 }

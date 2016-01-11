@@ -16,7 +16,10 @@ trait Selection {
     def apply[T](value: T)(mods: Modifier *) = new Opt(value)(mods)
   }
 
-  class SelectionRx[T](selectMods: Modifier *)(head: Opt[T], tail: Opt[T] *) extends FormidableRx[T] {
+  class SelectionRx[T]
+      (selectMods: Modifier *)
+      (head: Opt[T], tail: Opt[T] *)
+      (implicit ctx: RxCtx) extends FormidableRx[T] {
     private val options = collection.mutable.Buffer(head) ++ tail.toBuffer
     private val selected: rx.Var[T] = rx.Var(head.value)
 
@@ -40,7 +43,10 @@ trait Selection {
   }
 
   //Select element with dynamic (ie Rx'ing) set of choices
-  class DynamicSelectionRx[T](onReset: () => Unit, selectMods: Modifier *)(optionsRx: Rx[List[Opt[T]]]) extends FormidableRx[T] {
+  class DynamicSelectionRx[T]
+      (onReset: () => Unit, selectMods: Modifier *)
+      (optionsRx: Rx[List[Opt[T]]])
+      (implicit ctx: RxCtx) extends FormidableRx[T] {
     private val selectedIndex: Var[Int] = Var(0)
 
     val select: dom.html.Select = scalatags.JsDom.all.select(
@@ -79,8 +85,10 @@ trait Selection {
   }
 
   object SelectionRx {
-    def apply[T](selectMods: Modifier*)(head: Opt[T], options: Opt[T] *) = new SelectionRx[T](selectMods)(head, options:_*)
-    def dynamic[T](onReset: () => Unit, selectMods: Modifier *)(options: Rx[List[Opt[T]]]) =
+    def apply[T](selectMods: Modifier*)(head: Opt[T], options: Opt[T] *)(implicit ctx: RxCtx) =
+      new SelectionRx[T](selectMods)(head, options:_*)
+
+    def dynamic[T](onReset: () => Unit, selectMods: Modifier *)(options: Rx[List[Opt[T]]])(implicit ctx: RxCtx) =
       new DynamicSelectionRx[T](onReset,selectMods)(options)
   }
 }

@@ -1,9 +1,11 @@
 package formidable
 
+import rx.RxCtx
+
 import scala.reflect.macros._
 import scala.language.experimental.macros
 
-object Macros {
+object Macros2 {
 
   def getCompanion(c: blackbox.Context)(tpe: c.Type) = {
     import c.universe._
@@ -12,10 +14,10 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def generate[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with FormidableRx[Target]] = {
+  def generate[T: c.WeakTypeTag, Layout <: LayoutFor[T]: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[RxCtx]): c.Expr[Layout with FormidableRx[T]] = {
     import c.universe._
-    val targetTpe = weakTypeTag[Target].tpe
     val layoutTpe = weakTypeTag[Layout].tpe
+    val targetTpe = weakTypeTag[T].tpe
 
     val fields = targetTpe.decls.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
@@ -26,7 +28,7 @@ object Macros {
     val targetNames = fields.map(_.name.toString).toSet
     val missing = targetNames.diff(layoutNames)
     if(missing.nonEmpty) {
-      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n--${missing.mkString("\n--")}")
+      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n--- ${missing.mkString("\n--- ")}")
     }
 
     //Get subset of layout accessors that are rx.core.Var types
@@ -76,47 +78,40 @@ object Macros {
 
     val varResetMagic = rxVarAccessors.map { a =>
       val default = a.name.decodedName.toString + "Default"
-      q"this.$a.update(${TermName(default)})"
+      q"this.$a.Internal.value = (${TermName(default)})"
     }
 
-    c.Expr[Layout with FormidableRx[Target]](q"""
-      new $layoutTpe with FormidableRx[$targetTpe] {
-
-        implicit val ctx: rx.RxCtx = RxCtx.Unsafe
+    c.Expr[Layout with FormidableRx[T]](q"""
+      new $layoutTpe()($ctx) with FormidableRx[$targetTpe] {
+        implicit val ctx: RxCtx = $ctx
 
         private var isUpdating: Boolean = false
 
         ..$varDefaultsMagic
 
-        val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
+        override val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
           if(isUpdating) {
             scala.util.Failure(formidable.FormidableProcessingFailure)
-           }
-          else {
+          } else {
             for(..$unmagic) yield {
               $companion.apply(..${fields.indices.map(i=>TermName("a"+i))})
             }
           }
         }
 
-        private def startUpdate(): Unit = isUpdating = true
-
-        private def stopUpdate(): Unit = {
+        override def set(inp: $targetTpe): Unit = {
+          isUpdating = true
+          ${bindN(fields.size)}
           isUpdating = false
           current.recalc()
         }
 
-        override def set(inp: $targetTpe): Unit = {
-          startUpdate()
-          ${bindN(fields.size)}
-          stopUpdate()
-        }
-
-        def reset(): Unit = {
-          startUpdate()
+        override def reset(): Unit = {
+          isUpdating = true
           ..$varResetMagic
           ..$resetMagic
-          stopUpdate()
+          isUpdating = false
+          current.recalc()
         }
       }
     """)
