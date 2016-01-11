@@ -12,9 +12,7 @@ trait FormidableRx[Target] {
   def reset(): Unit
 }
 
-abstract class LayoutFor[Target](implicit ctx: RxCtx) {
-  type TargetType = Target
-}
+trait LayoutFor[Target]
 
 object FormidableRx {
   def apply[Layout,Target]: Layout with FormidableRx[Target] = macro Macros.generate[Layout,Target]
