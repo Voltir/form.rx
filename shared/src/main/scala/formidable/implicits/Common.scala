@@ -48,16 +48,16 @@ trait Common {
   implicit def implicitFormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: RxCtx): BindRx[F,Option[Target]] = new FormidableOptionBindRx[Target,F]
 
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
-  class RxLayoutList[T, Layout <: FormidableRx[T]](make: () => Layout)(implicit ctx: RxCtx) extends FormidableRx[List[T]] {
+  class RxLayoutList[T, Layout <: FormidableRx[T]](make: RxCtx => Layout)(implicit ctx: RxCtx) extends FormidableRx[List[T]] {
 
     val values: rx.Var[collection.mutable.Buffer[Layout]] = rx.Var(collection.mutable.Buffer.empty)
 
-    //override lazy val current: rx.Rx[Try[List[T]]] = values.map(ls => Try(ls.view.map(_.current()).flatten.toList))
-    override lazy val current: rx.Rx[Try[List[T]]] = values.map(ls => Try(ls.view.map(_.current().get).toList))
+    //override lazy val current: rx.Rx[Try[List[T]]] = values.map { a => Try(a.flatMap(_.current().toOption).toList) }
+    override lazy val current: rx.Rx[Try[List[T]]] = Rx { Try(values().map(_.current().get).toList) }
 
     override def set(inp: List[T]): Unit = {
-      values() = inp.map { f =>
-        val r = make()
+      values() = inp.view.map { f =>
+        val r = make(ctx)
         r.set(f)
         r
       }.toBuffer
@@ -68,12 +68,12 @@ trait Common {
     }
 
     def append(): Unit = {
-      values.now += make()
+      values.now += make(ctx)
       values.propagate()
     }
 
     def append(t: T) = {
-      val r = make()
+      val r = make(ctx)
       r.set(t)
       values.now += r
       values.propagate()
