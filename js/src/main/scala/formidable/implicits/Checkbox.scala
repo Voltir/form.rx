@@ -17,7 +17,7 @@ trait Checkbox {
     def apply[T](value: T)(mods: Modifier *) = new Chk(value)(mods)
   }
 
-  class CheckboxBoolRx(default: Boolean)(mods: Modifier *)(implicit ctx: RxCtx) extends FormidableRx[Boolean] {
+  class CheckboxBoolRx(default: Boolean)(mods: Modifier *)(implicit ctx: Ctx.Owner) extends FormidableRx[Boolean] {
     val input = scalatags.JsDom.all.input(`type`:="checkbox", mods).render
     val current: rx.Rx[Try[Boolean]] = rx.Rx { Try(input.checked) }
 
@@ -38,7 +38,7 @@ trait Checkbox {
       (name: String)
       (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
       (checks: Chk[T] *)
-      (implicit ctx: RxCtx) extends FormidableRx[Container[T]] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[Container[T]] {
 
     override val current: Rx[Try[Container[T]]] = Rx { Try { buildFrom(currentlyChecked()) }}
 
@@ -67,8 +67,8 @@ trait Checkbox {
   class DynamicCheckboxRx[T, Container[_] <: Traversable[_]]
       (name: String)
       (buildFrom: Seq[T] => Container[T], hasValue: Container[T] => T => Boolean)
-      (checksRx: rx.Node[List[Chk[T]]])
-      (implicit ctx: RxCtx) extends FormidableRx[Container[T]] {
+      (checksRx: rx.Rx[List[Chk[T]]])
+      (implicit ctx: Ctx.Owner) extends FormidableRx[Container[T]] {
 
     val current: Rx[Try[Container[T]]] = checksRx.map { cs =>
       Try(buildFrom(cs.filter(_.input.checked).map(_.value)))
@@ -95,16 +95,16 @@ trait Checkbox {
   }
 
   object CheckboxRx {
-    def bool(default: Boolean, modifiers: Modifier *)(implicit ctx: RxCtx) =
+    def bool(default: Boolean, modifiers: Modifier *)(implicit ctx: Ctx.Owner) =
       new CheckboxBoolRx(default)(modifiers)
 
-    def set[T](name: String)(checks: Chk[T] *)(implicit ctx: RxCtx) =
+    def set[T](name: String)(checks: Chk[T] *)(implicit ctx: Ctx.Owner) =
       new CheckboxBaseRx[T,Set](name)(_.toSet, c => v => c.contains(v))(checks:_*)
 
-    def list[T](name: String)(checks: Chk[T] *)(implicit ctx: RxCtx) =
+    def list[T](name: String)(checks: Chk[T] *)(implicit ctx: Ctx.Owner) =
       new CheckboxBaseRx[T,List](name)(_.toList, c => v => c.contains(v))(checks:_*)
 
-    def dynamicSet[T](name: String)(checks: rx.Node[List[Chk[T]]])(implicit ctx: RxCtx) =
+    def dynamicSet[T](name: String)(checks: rx.Rx[List[Chk[T]]])(implicit ctx: Ctx.Owner) =
       new DynamicCheckboxRx[T, Set](name)(_.toSet, c => v => c.contains(v))(checks)
   }
 }

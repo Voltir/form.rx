@@ -82,7 +82,7 @@ object Macros {
     c.Expr[Layout with FormidableRx[Target]](q"""
       new $layoutTpe with FormidableRx[$targetTpe] {
 
-        implicit val ctx: rx.RxCtx = RxCtx.Unsafe
+        implicit val ctx: rx.Ctx.Owner = Ctx.Owner.Unsafe
 
         private var isUpdating: Boolean = false
 

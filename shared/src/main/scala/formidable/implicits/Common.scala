@@ -7,14 +7,14 @@ import rx._
 trait Common {
 
   //Binder for Ignored fields
-  class Ignored[T](val default: T)(implicit ctx: RxCtx) extends FormidableRx[T] {
+  class Ignored[T](val default: T)(implicit ctx: Ctx.Owner) extends FormidableRx[T] {
     override val current: Rx[Try[T]] = Rx { Success(default) }
     override def set(inp: T): Unit = ()
     override def reset(): Unit = ()
   }
 
   object Ignored {
-    def apply[T](default: T)(implicit ctx: RxCtx) = new Ignored(default)
+    def apply[T](default: T)(implicit ctx: Ctx.Owner) = new Ignored(default)
   }
 
   //Implicit for general FormidableRx
@@ -26,7 +26,7 @@ trait Common {
   implicit def implicitFormidableBindRx[F <: FormidableRx[Target],Target]: BindRx[F,Target] = new FormidableBindRx[F,Target]
 
   //Implicit for rx.Var binding
-  class VarBindRx[Target](implicit ctx: RxCtx) extends BindRx[Var[Target],Target] {
+  class VarBindRx[Target](implicit ctx: Ctx.Owner) extends BindRx[Var[Target],Target] {
     override def bind(inp: Var[Target], value: Target) = inp() = value
     override def unbind(inp: Var[Target]): rx.Rx[Try[Target]] = inp.map(a => scala.util.Try(a))
 
@@ -34,10 +34,10 @@ trait Common {
     override def reset(inp: Var[Target]): Unit = ()
 
   }
-  implicit def implicitVarBindRx[Target](implicit ctx: RxCtx): BindRx[Var[Target],Target] = new VarBindRx[Target]()
+  implicit def implicitVarBindRx[Target](implicit ctx: Ctx.Owner): BindRx[Var[Target],Target] = new VarBindRx[Target]()
 
   //Generic formidable to lift into lift a defined formidable into an Option type
-  class FormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: RxCtx) extends BindRx[F,Option[Target]] {
+  class FormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: Ctx.Owner) extends BindRx[F,Option[Target]] {
     override def bind(inp: F, value: Option[Target]) = {
       value.foreach(inp.set)
       inp.current.recalc()
@@ -45,10 +45,10 @@ trait Common {
     override def unbind(inp: F): Rx[Try[Option[Target]]] = Rx { Success(inp.current().toOption) }
     override def reset(inp: F): Unit = inp.reset()
   }
-  implicit def implicitFormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: RxCtx): BindRx[F,Option[Target]] = new FormidableOptionBindRx[Target,F]
+  implicit def implicitFormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: Ctx.Owner): BindRx[F,Option[Target]] = new FormidableOptionBindRx[Target,F]
 
   //This class is for a List of FormidableRx's for variable sized form parts (ie: List of experience in a Resume form)
-  class RxLayoutList[T, Layout <: FormidableRx[T]](make: RxCtx => Layout)(implicit ctx: RxCtx) extends FormidableRx[List[T]] {
+  class RxLayoutList[T, Layout <: FormidableRx[T]](make: Ctx.Owner => Layout)(implicit ctx: Ctx.Owner) extends FormidableRx[List[T]] {
 
     val values: rx.Var[collection.mutable.Buffer[Layout]] = rx.Var(collection.mutable.Buffer.empty)
 

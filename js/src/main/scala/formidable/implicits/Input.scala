@@ -32,7 +32,7 @@ trait Input {
       update(inp)
     }
 
-    override def unbind(inp: dom.html.Input): rx.Node[Try[Target]] = {
+    override def unbind(inp: dom.html.Input): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(strLike.from)
     }
 
@@ -49,11 +49,11 @@ trait Input {
       (val inputTag: TypedTag[dom.html.Input])
       (val fromString: String => T)
       (val newLayout: () => Layout)
-      (implicit ctx: RxCtx) extends FormidableRx[List[T]] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[List[T]] {
 
     val values: rx.Var[mut.Buffer[Layout]] = rx.Var(mut.Buffer.empty)
 
-    def pop() = values() = values.now - values().last
+    def pop() = values() = values.now - values.now.last
 
     lazy val current: rx.Rx[Try[List[T]]] = rx.Rx { Try {
       values().map(_.current().get).toList
@@ -91,7 +91,7 @@ trait Input {
 
         if(key == KCode.Enter) doUpdate
 
-        if(key == KCode.Backspace && jsThis.value == "" && values().nonEmpty) {
+        if(key == KCode.Backspace && jsThis.value == "" && values.now.nonEmpty) {
           pop()
         }
       }
@@ -108,11 +108,11 @@ trait Input {
       (val inputTag: TypedTag[dom.html.Input])
       (val fromString: String => T)
       (val newLayout: () => Layout)
-      (implicit ctx: RxCtx) extends FormidableRx[Set[T]] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[Set[T]] {
 
     val values: rx.Var[Set[Layout]] = rx.Var(Set.empty)
 
-    def pop() = values() = values.now - values().last
+    def pop() = values() = values.now - values.now.last
 
     val current: rx.Rx[Try[Set[T]]] = rx.Rx { Try {
       values().flatMap(_.current().toOption)
@@ -146,7 +146,7 @@ trait Input {
 
         if(key == KCode.Enter) doUpdate()
 
-        if(key == KCode.Backspace && jsThis.value == "" && values().nonEmpty) {
+        if(key == KCode.Backspace && jsThis.value == "" && values.now.nonEmpty) {
           pop()
         }
       }
@@ -161,7 +161,7 @@ trait Input {
   class Validate[T: StringTryLike]
       (defaultToUninitialized: Boolean)
       (mods: Modifier*)
-      (implicit ctx: RxCtx) extends FormidableRx[T] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[T] {
 
     private val strLike = implicitly[StringTryLike[T]]
 
@@ -195,21 +195,21 @@ trait Input {
     def validate[T: StringTryLike]
         (defaultToUninitialized: Boolean)
         (mods: Modifier *)
-        (implicit ctx: RxCtx) =
+        (implicit ctx: Ctx.Owner) =
       new Validate[T](defaultToUninitialized)(mods)
 
     def set[T, Layout <: FormidableRx[T]]
         (inputTag: TypedTag[dom.html.Input])
         (fromString: String => T)
         (newLayout: () => Layout)
-        (implicit ctx: RxCtx) =
+        (implicit ctx: Ctx.Owner) =
       new TextRxSet[T,Layout](inputTag)(fromString)(newLayout)
 
     def list[T, Layout <: FormidableRx[T]]
         (inputTag: TypedTag[dom.html.Input])
         (fromString: String => T)
         (newLayout: () => Layout)
-        (implicit ctx: RxCtx) =
+        (implicit ctx: Ctx.Owner) =
       new TextRxBufferList[T,Layout](inputTag)(fromString)(newLayout)
   }
 

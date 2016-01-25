@@ -27,7 +27,7 @@ object Testz {
   import implicits.all._
   trait Other { def other: Int = 42 }
   println("!!!")
-  class ThingLayout(implicit ctx: RxCtx) extends LayoutFor[Thing] with Other {
+  class ThingLayout(implicit ctx: Ctx.Owner) extends LayoutFor[Thing] with Other {
     val foo = Var("")
     val bar = Var("")
     val baz = Var("")
@@ -52,7 +52,7 @@ object BasicTests extends TestSuite {
   import implicits.all._
 
   println(Testz.formz)
-  implicit val testctx = RxCtx.safe()
+  implicit val testctx = Ctx.Owner.safe()
 
   val foo = Stuff("A",42)
 
@@ -181,7 +181,7 @@ object BasicTests extends TestSuite {
 object CheckboxTests extends TestSuite {
   import implicits.all._
 
-  implicit val testctx = RxCtx.safe()
+  implicit val testctx = Ctx.Owner.safe()
 
   case class Fruit(name: String)
   case class FruitBasket(fruits: Set[Fruit])
@@ -265,7 +265,7 @@ object CheckboxTests extends TestSuite {
 object RadioTests extends TestSuite {
   import implicits.all._
 
-  implicit val testctx = RxCtx.safe()
+  implicit val testctx = Ctx.Owner.safe()
 
   case class SomeChoice(choice: ChoiceLike)
 

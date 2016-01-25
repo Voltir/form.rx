@@ -21,7 +21,7 @@ trait Radio {
   class RadioRx[T]
       (name: String)
       (val head: Radio[T], val tail: Radio[T] *)
-      (implicit ctx: RxCtx) extends FormidableRx[T] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[T] {
     private val selected: rx.Var[T] = rx.Var(head.value)
 
     override val current: rx.Rx[Try[T]] = selected.map(s => scala.util.Success(s))
@@ -46,7 +46,7 @@ trait Radio {
   class DynamicRadioRx[T]
       (name: String)
       (radiosRx: Rx[List[Radio[T]]])
-      (implicit ctx: RxCtx) extends FormidableRx[T] {
+      (implicit ctx: Ctx.Owner) extends FormidableRx[T] {
 
     val current: Rx[Try[T]] = radiosRx.map(
       _.find(_.input.checked)
@@ -71,10 +71,10 @@ trait Radio {
   }
 
   object RadioRx {
-    def apply[T](name: String)(head: Radio[T], radios: Radio[T] *)(implicit ctx: RxCtx) =
+    def apply[T](name: String)(head: Radio[T], radios: Radio[T] *)(implicit ctx: Ctx.Owner) =
       new RadioRx[T](name)(head,radios.toList:_*)
 
-    def dynamic[T](name: String)(radiosRx: Rx[List[Radio[T]]])(implicit ctx: RxCtx) =
+    def dynamic[T](name: String)(radiosRx: Rx[List[Radio[T]]])(implicit ctx: Ctx.Owner) =
       new DynamicRadioRx[T](name)(radiosRx)
   }
 }

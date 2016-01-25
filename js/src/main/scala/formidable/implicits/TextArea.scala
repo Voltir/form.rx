@@ -42,7 +42,7 @@ trait TextArea {
       update(inp)
     }
 
-    override def unbind(inp: dom.html.TextArea): rx.Node[Try[Target]] = {
+    override def unbind(inp: dom.html.TextArea): rx.Rx[Try[Target]] = {
       bindDynamic(inp)(strLike.from)
     }
 

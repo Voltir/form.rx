@@ -1,7 +1,5 @@
 package formidable
 
-import rx.RxCtx
-
 import scala.reflect.macros._
 import scala.language.experimental.macros
 
@@ -14,7 +12,7 @@ object Macros2 {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def generate[T: c.WeakTypeTag, Layout <: LayoutFor[T]: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[RxCtx]): c.Expr[Layout with FormidableRx[T]] = {
+  def generate[T: c.WeakTypeTag, Layout <: LayoutFor[T]: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormidableRx[T]] = {
     import c.universe._
     val layoutTpe = weakTypeTag[Layout].tpe
     val targetTpe = weakTypeTag[T].tpe
@@ -83,7 +81,7 @@ object Macros2 {
 
     c.Expr[Layout with FormidableRx[T]](q"""
       new $layoutTpe()($ctx) with FormidableRx[$targetTpe] {
-        implicit val ctx: RxCtx = $ctx
+        implicit val ctx: Ctx.Owner = $ctx
 
         private var isUpdating: Boolean = false
 

@@ -83,7 +83,7 @@ object Build extends sbt.Build {
   object Versions {
     val scalajsDom = "0.8.2"
     val scalatags = "0.5.2"
-    val scalarx = "0.3.0-SNAPSHOT"
+    val scalarx = "0.3.0"
     val utest = "0.3.1"
     val likelib = "0.1.1"
   }
