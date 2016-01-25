@@ -12,11 +12,29 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def generate[Layout: c.WeakTypeTag, Target: c.WeakTypeTag](c: blackbox.Context): c.Expr[Layout with FormidableRx[Target]] = {
+  def generate[T: c.WeakTypeTag, Layout: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormidableRx[T]] = {
     import c.universe._
-    val targetTpe = weakTypeTag[Target].tpe
+    val ownerTpe = weakTypeOf[rx.Ctx.Owner]
     val layoutTpe = weakTypeTag[Layout].tpe
+    val targetTpe = weakTypeTag[T].tpe
 
+
+    //Ensure Layout can be constructed in the expected way
+    val isValidLayout = layoutTpe.decls.exists {
+      case m: MethodSymbol if m.isPrimaryConstructor =>
+        m.paramLists match {
+          case List(Nil,List(owner)) if owner.asTerm.typeSignature.weak_<:<(ownerTpe) => true
+          case _ => false
+        }
+      case _ => false
+    }
+
+    if(!isValidLayout) {
+      val msg = s"Invalid Layout: requires a constructor of the from $layoutTpe()(implicit ctx: Ctx.Owner)!"
+      c.abort(c.enclosingPosition,msg)
+    }
+
+    //Collect all fields for the target type
     val fields = targetTpe.decls.collectFirst {
       case m: MethodSymbol if m.isPrimaryConstructor => m
     }.get.paramLists.head
@@ -26,7 +44,7 @@ object Macros {
     val targetNames = fields.map(_.name.toString).toSet
     val missing = targetNames.diff(layoutNames)
     if(missing.nonEmpty) {
-      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n--${missing.mkString("\n--")}")
+      c.abort(c.enclosingPosition,s"The layout is not fully defined: Missing fields are:\n--- ${missing.mkString("\n--- ")}")
     }
 
     //Get subset of layout accessors that are rx.core.Var types
@@ -74,49 +92,45 @@ object Macros {
       q"val ${TermName(default)} = this.$a.now"
     }
 
-    val varResetMagic = rxVarAccessors.map { a =>
-      val default = a.name.decodedName.toString + "Default"
-      q"this.$a.update(${TermName(default)})"
+    def varResetMagic: Option[c.Tree] = {
+      val defaults = rxVarAccessors.map { a =>
+        val default = a.name.decodedName.toString + "Default"
+        q"rx.VarTuple(this.$a,${TermName(default)})"
+      }
+      if(defaults.nonEmpty) Option(q"rx.Var.set(..$defaults)") else None
     }
 
-    c.Expr[Layout with FormidableRx[Target]](q"""
-      new $layoutTpe with FormidableRx[$targetTpe] {
-
-        implicit val ctx: rx.Ctx.Owner = Ctx.Owner.Unsafe
+    c.Expr[Layout with FormidableRx[T]](q"""
+      new $layoutTpe()($ctx) with FormidableRx[$targetTpe] {
+        implicit val ctx: Ctx.Owner = $ctx
 
         private var isUpdating: Boolean = false
 
         ..$varDefaultsMagic
 
-        val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
+        override val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
           if(isUpdating) {
             scala.util.Failure(formidable.FormidableProcessingFailure)
-           }
-          else {
+          } else {
             for(..$unmagic) yield {
               $companion.apply(..${fields.indices.map(i=>TermName("a"+i))})
             }
           }
         }
 
-        private def startUpdate(): Unit = isUpdating = true
-
-        private def stopUpdate(): Unit = {
+        override def set(inp: $targetTpe): Unit = {
+          isUpdating = true
+          ${bindN(fields.size)}
           isUpdating = false
           current.recalc()
         }
 
-        override def set(inp: $targetTpe): Unit = {
-          startUpdate()
-          ${bindN(fields.size)}
-          stopUpdate()
-        }
-
-        def reset(): Unit = {
-          startUpdate()
-          ..$varResetMagic
+        override def reset(): Unit = {
+          isUpdating = true
+          $varResetMagic
           ..$resetMagic
-          stopUpdate()
+          isUpdating = false
+          current.recalc()
         }
       }
     """)

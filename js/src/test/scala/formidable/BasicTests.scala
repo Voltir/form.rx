@@ -26,37 +26,23 @@ case class Stuff(foo: String, bar: Int)
 object Testz {
   import implicits.all._
   trait Other { def other: Int = 42 }
-  println("!!!")
-  class ThingLayout(implicit ctx: Ctx.Owner) extends LayoutFor[Thing] with Other {
+  class ThingLayout()(implicit ctx: Ctx.Owner) extends Other {
     val foo = Var("")
     val bar = Var("")
     val baz = Var("")
   }
 
-  //class MehLayout extends LayoutFor[Int]
-
-  println("????")
-  val formz = FormidableRx.apply2[Thing,ThingLayout]
-
-  println(formz.other)
-
-  println("YAY: " + formz.current.now)
-  formz.bar() = "AIEEE"
-  println(formz.current.now)
-  formz.reset()
-  println(formz.current.now)
-  //formz.reset()
+  val formz = FormidableRx[Thing,ThingLayout]
 }
 
 object BasicTests extends TestSuite {
   import implicits.all._
 
-  println(Testz.formz)
   implicit val testctx = Ctx.Owner.safe()
 
   val foo = Stuff("A",42)
 
-  trait StuffLayout {
+  class StuffLayout(implicit ctx: Ctx.Owner) {
     val foo = Var("aBarTxt")
     val bar = Var(999)
   }
@@ -65,13 +51,13 @@ object BasicTests extends TestSuite {
     'object3 {
       val foo = Thing("A","BB","CCC")
 
-      trait ThingLayout {
+      class ThingLayout(implicit ctzzx: Ctx.Owner) {
         val foo = scalatags.JsDom.tags.input(`type`:="text").render
         val bar = scalatags.JsDom.tags.input(`type`:="text").render
         val baz = scalatags.JsDom.tags.input(`type`:="text").render
       }
 
-      val test = FormidableRx[ThingLayout,Thing]
+      val test = FormidableRx[Thing,ThingLayout]
 
       test.set(foo)
       //println("###### DONNNE ####")
@@ -86,13 +72,13 @@ object BasicTests extends TestSuite {
     }
     'ignored {
       import implicits.all._
-      trait ThingIgnoreLayout {
+      abstract class ThingIgnoreLayout()(implicit ctx: Ctx.Owner) {
         val foo = Ignored("X")
         val bar = Ignored("Y")
         val baz = scalatags.JsDom.tags.input(`type`:="text").render
       }
       val foo = Thing("A","BB","CCC")
-      val test = FormidableRx[ThingIgnoreLayout,Thing]
+      val test = FormidableRx[Thing,ThingIgnoreLayout]
       test.set(foo)
       assert(test.baz.value == "CCC")
       assert(test.foo.current.now.get == "X")
@@ -105,15 +91,15 @@ object BasicTests extends TestSuite {
     'nested {
       import implicits.all._
 
-      trait InnerLayout {
+      class InnerLayout(implicit ctx: Ctx.Owner) {
         val a = scalatags.JsDom.tags.input(`type`:="text").render
         val b = scalatags.JsDom.tags.input(`type`:="text").render
       }
-      trait OuterLayout {
+      class OuterLayout(implicit ctx: Ctx.Owner) {
         val foo = scalatags.JsDom.tags.input(`type`:="text").render
-        val inner = FormidableRx[InnerLayout,Inner]
+        val inner = FormidableRx[Inner,InnerLayout]
       }
-      val test = FormidableRx[OuterLayout,Outer]
+      val test = FormidableRx[Outer,OuterLayout]
       test.set(Outer("LOL",Inner("QQQ","ZZZ")))
       assert(test.inner.a.value == "QQQ")
       assert(test.inner.b.value == "ZZZ")
@@ -135,7 +121,7 @@ object BasicTests extends TestSuite {
       import scalatags.JsDom.tags.input
       import org.scalajs.dom
 
-      trait NotStringLayout {
+      class NotStringLayout(implicit ctx: Ctx.Owner) {
         val foo = input(`type`:="text").render
         val bar = Var(Wrapped(42))
         val baz = SelectionRx[ChoiceLike]()(
@@ -145,13 +131,13 @@ object BasicTests extends TestSuite {
         )
       }
 
-      val test = FormidableRx[NotStringLayout,NotStrings]
+      val test = FormidableRx[NotStrings,NotStringLayout]
       test.bar() = Wrapped(82828282)
       test.reset()
     }
 
     'vars {
-      val test = FormidableRx[StuffLayout,Stuff]
+      val test = FormidableRx[Stuff,StuffLayout]
 
       test.set(foo)
       assert(test.foo.now == "A")
@@ -167,7 +153,7 @@ object BasicTests extends TestSuite {
     }
 
     'innerRxDependencies {
-      val test = FormidableRx[StuffLayout,Stuff]
+      val test = FormidableRx[Stuff,StuffLayout]
       val barRx = Rx { test.bar() + 2 }
       assert(barRx.now == 1001)
       test.set(foo)
@@ -195,21 +181,21 @@ object CheckboxTests extends TestSuite {
 
   val fruitOpts: Var[List[Chk[Fruit]]] = Var(List.empty)
 
-  trait FruitListLayout {
+  class FruitListLayout()(implicit ctx: Ctx.Owner) {
     val fruits = CheckboxRx.list[Fruit]("fruits")(allFruits.toList.map(f => Chk(f)()):_*)
   }
 
-  trait FruitBasketLayout1 {
+  class FruitBasketLayout1()(implicit ctx: Ctx.Owner) {
     val fruits = CheckboxRx.set[Fruit]("fruits")(allFruits.toList.map(f => Chk(f)()):_*)
   }
 
-  trait FruitBasketLayout2 {
+  class FruitBasketLayout2()(implicit ctx: Ctx.Owner) {
     val fruits = CheckboxRx.dynamicSet[Fruit]("fruits")(fruitOpts)
   }
 
   def tests = TestSuite {
     'list {
-      val form = FormidableRx[FruitListLayout, FruitList]
+      val form = FormidableRx[FruitList,FruitListLayout]
 
       // sanity
       assert(form.current.now.get.fruits.isEmpty)
@@ -221,7 +207,7 @@ object CheckboxTests extends TestSuite {
     }
 
     'set {
-      val form = FormidableRx[FruitBasketLayout1, FruitBasket]
+      val form = FormidableRx[FruitBasket,FruitBasketLayout1]
 
       // sanity
       assert(form.current.now.get.fruits.isEmpty)
@@ -233,7 +219,7 @@ object CheckboxTests extends TestSuite {
     }
 
     'dynamicSet {
-      val form = FormidableRx[FruitBasketLayout2, FruitBasket]
+      val form = FormidableRx[FruitBasket,FruitBasketLayout2]
 
       // sanity
       val currentChecks = fruitOpts.now
@@ -269,7 +255,7 @@ object RadioTests extends TestSuite {
 
   case class SomeChoice(choice: ChoiceLike)
 
-  trait SomeChoiceLayout {
+  class SomeChoiceLayout()(implicit ctx: Ctx.Owner) {
     val choice = RadioRx[ChoiceLike]("choices")(
       Radio(FirstChoice)(),
       Radio(SecondChoice)(),
@@ -279,7 +265,7 @@ object RadioTests extends TestSuite {
 
   def tests = TestSuite {
     'radio {
-      val form = FormidableRx[SomeChoiceLayout,SomeChoice]
+      val form = FormidableRx[SomeChoice,SomeChoiceLayout]
 
       assert(form.choice.current.now.get == FirstChoice)
 

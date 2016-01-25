@@ -1,8 +1,6 @@
 package formidable
 
-
 import scala.language.experimental.macros
-import scala.reflect.ClassTag
 import scala.util.Try
 
 trait FormidableRx[Target] {
@@ -11,11 +9,7 @@ trait FormidableRx[Target] {
   def reset(): Unit
 }
 
-trait LayoutFor[Target]
-
 object FormidableRx {
-  def apply[Layout,Target]: Layout with FormidableRx[Target] = macro Macros.generate[Layout,Target]
-
-  def apply2[T,Layout <: LayoutFor[T]](implicit ctx: rx.Ctx.Owner): Layout with FormidableRx[T] = macro Macros2.generate[T,Layout]
+  def apply[T,Layout](implicit ctx: rx.Ctx.Owner): Layout with FormidableRx[T] = macro Macros.generate[T,Layout]
 }
 

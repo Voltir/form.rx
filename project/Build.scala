@@ -69,9 +69,10 @@ object Build extends sbt.Build {
         "com.lihaoyi" %% "acyclic" % "0.1.2"
       )
     ).jsSettings(
-    jsDependencies += RuntimeDOM % "test",
-    preLinkJSEnv := PhantomJSEnv().value,
+      jsDependencies += RuntimeDOM % "test",
+      preLinkJSEnv := PhantomJSEnv().value,
       scalaJSStage in Test := FullOptStage,
+      scalaJSUseRhino in Global := false,
       libraryDependencies ++= Seq(
         "org.scala-js" %%% "scalajs-dom" % Versions.scalajsDom
       )
