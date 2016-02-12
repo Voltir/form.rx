@@ -36,6 +36,15 @@ trait Common {
   }
   implicit def implicitVarBindRx[Target](implicit ctx: Ctx.Owner): BindRx[Var[Target],Target] = new VarBindRx[Target]()
 
+  //Implicit for rx.Dynamic binding
+  class DynamicBindRx[Target](implicit ctx: Ctx.Owner) extends BindRx[Rx.Dynamic[Target], Target] {
+    //Using an Rx.Dynamic as a Bind means it can't be set/reset - it should be used like a mapping operation
+    override def bind(inp: Rx.Dynamic[Target], value: Target) = ()
+    override def reset(inp: Rx.Dynamic[Target]): Unit = ()
+    override def unbind(inp: Rx.Dynamic[Target]): rx.Rx[Try[Target]] = inp.map((a:Target) => Try(a))
+  }
+  implicit def implicitRxBindRx[Target](implicit ctx: Ctx.Owner): BindRx[Rx.Dynamic[Target],Target] = new DynamicBindRx[Target]()
+
   //Generic formidable to lift into lift a defined formidable into an Option type
   class FormidableOptionBindRx[Target, F <: FormidableRx[Target]](implicit ctx: Ctx.Owner) extends BindRx[F,Option[Target]] {
     override def bind(inp: F, value: Option[Target]) = {
