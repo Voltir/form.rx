@@ -1,6 +1,6 @@
 
 val formrx = crossProject.settings(
-  version := "0.1.2-SNAPSHOT",
+  version := "1.1.0-SNAPSHOT",
   name := "formrx",
   scalaVersion := "2.11.7",
   organization := "com.stabletechs",
@@ -8,8 +8,8 @@ val formrx = crossProject.settings(
   addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.3"),
   libraryDependencies ++= Seq(
     "com.stabletechs" %%% "likelib" % "0.1.1",
-    "com.lihaoyi" %%% "scalarx" % "0.3.1-SNAPSHOT",
-    "com.lihaoyi" %%% "scalatags" % "0.5.2",
+    "com.lihaoyi" %%% "scalarx" % "0.3.1",
+    "com.lihaoyi" %%% "scalatags" % "0.5.4",
     "com.lihaoyi" %%% "utest" % "0.3.1" % "test",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ),
@@ -45,7 +45,7 @@ val formrx = crossProject.settings(
   scalaJSStage in Test := FullOptStage,
   scalaJSUseRhino in Global := false,
   libraryDependencies ++= Seq(
-    "org.scala-js" %%% "scalajs-dom" % "0.8.2"
+    "org.scala-js" %%% "scalajs-dom" % "0.9.0"
   )
 )
 
