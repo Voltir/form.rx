@@ -9,6 +9,8 @@ Contents
 - [Quick Demo](#quick-demo)
 - [Using Form.rx](#using-formrx)
   - [Form.rx Basics](#formrx-basics)
+  - [Form.rx Nesting](#formrx-nesting)
+  - [Using rx.Vars](#using-vars)
 
 Getting Started
 ===============
@@ -77,3 +79,25 @@ With the loginForm created, it can be used, for example, with scalatags in the f
  )
 ```
 In this example, `loginForm.firstname` and `loginForm.pass` are the HTML input elements as defined in `UserPassLayout`. `loginForm.current` has type `Rx[Try[UserPass]]` and is updated every time either input field is modified. In this case though, we are ignoring `scala.rx`s data binding functionality and using `.now` to get out only the latest value when the user hits `Submit`. The resulting `loginTag` is just a normal HtmlTag and can be used in any `scalatag` based project.  
+
+In addition to `.current`, FormRx also provides by default a `.set(...)` and `.reset()` functions. `.set` takes an instance of the target `case class` and populates the form with the data from that case class, for example:
+```scala
+loginForm.set(UserPass("Bob","secretpass"))
+```
+
+`.reset()` on the other hand takes no arguments and simply resets the form to a default state, in this case the empty string is used as the default value and the form is effectively cleared:
+```scala
+loginForm.reset()
+```
+
+The combination of `.set` and `.reset` simplifies the task of "editing" existing data, which makes `FormRx` forms ideal for being used for "upsert" like tasks when form data must both be created and edited.
+ 
+Form.rx Nesting
+---------------
+
+Todo
+
+Using rx.Vars
+--------------
+
+Todo
