@@ -10,7 +10,7 @@ Contents
 - [Using Form.rx](#using-formrx)
   - [Form.rx Basics](#formrx-basics)
   - [Form.rx Nesting](#formrx-nesting)
-  - [Using rx.Vars](#using-vars)
+  - [Using rx.Vars](#using-rxvars)
 
 Getting Started
 ===============
@@ -22,9 +22,9 @@ Form.rx is only compiled for Scala.js 0.6+
 
 Quick Demo
 ==========
-[Demo](https://voltir.github.io/formidable-demo)
+[Demo](https://voltir.github.io/form.rx-demo)
 
-[Demo Source](https://github.com/Voltir/formidable-demo/blob/master/src/main/scala/example/ScalaJSExample.scala)
+[Demo Source](https://github.com/Voltir/form.rx-demo/blob/master/src/main/scala/example/ScalaJSExample.scala)
 
 Using Form.rx
 =============
@@ -95,9 +95,92 @@ The combination of `.set` and `.reset` simplifies the task of "editing" existing
 Form.rx Nesting
 ---------------
 
-Todo
+Form.rx allows for mapping tree like ADT structures by allowing layouts to nest inside of each other.
+
+For example:
+```scala
+  case class Inner(foo: String, bar: Int)
+  
+  case class Nested(top: String, inner: Inner, other: Inner)
+```  
+
+To create a `Layout` for `Nested` we can start with `Layout` for `Inner`:
+
+```scala
+  class InnerLayout(implicit ctx: Ctx.Owner) {
+    val foo = input(`type`:="text").render
+    val bar = SelectionRx[Int]()(
+      Opt(1)(value:="One","One"),
+      Opt(2)(value:="Two","twwo"),
+      Opt(42)(value:="Life","What is?"),
+      Opt(5)(value:="Five","5ive")
+    )
+  }
+```
+Here `Inner.foo` is bound to a simple HTML input element and `Inner.bar` is bound to a HTML selection drop down with 4 possible values.
+
+We can then use `InnerLayout` to define `NestedLayout`:
+
+```scala
+  class NestedLayout(implicit ctx: Ctx.Owner) {
+    val top = input(`type`:="text").render
+    val inner = FormRx[Inner,InnerLayout]
+    val other = FormRx[Inner,InnerLayout]
+  }
+```
+Which can then be used, for example, in the following way:
+```scala
+val nestedForm = FormRx[Nested,NestedLayout]
+...
+form(
+  nestedForm.top,
+  nestedForm.uid,
+  label("Inner:"),
+  nestedForm.inner.foo,
+  nestedForm.inner.bar.select,
+  label("Other:"),
+  nestedForm.other.foo,
+  nestedForm.other.bar.select
+)
+...
+```
 
 Using rx.Vars
 --------------
 
-Todo
+In addition to HTML input elements, `rx.Var`s can be used as a mechanism to bind specific fields, allowing for a great deal of flexibility in building a user interface.
+
+For example, `InnerLayout` could be redefined to the following:
+```scala
+  class InnerLayout(implicit ctx: Ctx.Owner) {
+    val foo = input(`type`:="text").render
+    val bar = Var(0)
+  }
+```
+Where `bar` could then be manipulated and used like any other `rx.Var[Int]`, for example (from the demo):
+```scala
+def buttons(inp: Var[Int]): Rx[HtmlTag] = Rx {
+  div(
+    label("Current Value: " + inp()),
+    ul(cls:="button-group")(
+      li(a(cls:="button", onclick:={ () => inp() = inp.now + 1 })("Inc")),
+      li(a(cls:="button", onclick:={ () => inp() = inp.now - 1 })("Dec"))
+    )
+  )
+}
+...
+  buttons(nestedForm.inner.bar)
+...
+  buttons(nestedForm.other.bar)
+...
+```
+
+Lists and Sets
+--------------
+
+One problem when building a user interface is deciding how to represent data structures like Lists and Sets of elements. In a serialization library, there usually is only the need to represent such data structures one way - a serialization macro can just pick one and use it throughout. 
+Unfortunately when building a user interface, there are a myriad of ways one might want to use to present the data, all of which are equally valid. Form.rx includes some utilities to help with common data structures such as Lists and Sets, and is also highly extensible such that other data structures and/or custom layouts can be freely mixed in.
+
+TODO Sample
+   
+   
