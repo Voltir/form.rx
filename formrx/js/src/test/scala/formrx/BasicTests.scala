@@ -251,8 +251,6 @@ object CheckboxTests extends TestSuite {
 object RadioTests extends TestSuite {
   import implicits.all._
 
-  implicit val testctx = Ctx.Owner.safe()
-
   case class SomeChoice(choice: ChoiceLike)
 
   class SomeChoiceLayout()(implicit ctx: Ctx.Owner) {
@@ -263,9 +261,10 @@ object RadioTests extends TestSuite {
     )
   }
 
+  val form = FormRx[SomeChoice,SomeChoiceLayout]
+
   def tests = TestSuite {
     'radio {
-      val form = FormRx[SomeChoice,SomeChoiceLayout]
 
       assert(form.choice.current.now.get == FirstChoice)
 
@@ -273,5 +272,4 @@ object RadioTests extends TestSuite {
       assert(form.choice.current.now.get == ThirdChoice("foo",42))
     }
   }
-
 }

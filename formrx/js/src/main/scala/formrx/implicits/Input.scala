@@ -46,9 +46,9 @@ trait Input {
 
   //For List of Things (ie Tag Like)
   class TextRxBufferList[T, Layout <: FormRx[T]]
-      (val inputTag: TypedTag[dom.html.Input])
-      (val fromString: String => T)
-      (val newLayout: () => Layout)
+      (inputTag: TypedTag[dom.html.Input])
+      (fromString: String => T)
+      (newLayout: () => Layout)
       (implicit ctx: Ctx.Owner) extends FormRx[List[T]] {
 
     val values: rx.Var[mut.Buffer[Layout]] = rx.Var(mut.Buffer.empty)
@@ -76,7 +76,7 @@ trait Input {
       (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
         val key = evt.polyfill()._1
 
-        def doUpdate = {
+        def doUpdate() = {
           evt.stopPropagation()
           evt.preventDefault()
           val elem = fromString(jsThis.value)
@@ -87,9 +87,9 @@ trait Input {
           values.propagate()
         }
 
-        if(key == KCode.Comma) doUpdate
+        if(key == KCode.Comma) doUpdate()
 
-        if(key == KCode.Enter) doUpdate
+        if(key == KCode.Enter) doUpdate()
 
         if(key == KCode.Backspace && jsThis.value == "" && values.now.nonEmpty) {
           pop()
