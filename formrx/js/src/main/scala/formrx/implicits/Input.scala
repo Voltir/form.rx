@@ -72,35 +72,36 @@ trait Input {
       set(List.empty)
     }
 
-    protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
-      (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
-        val key = evt.polyfill()._1
+    protected def handleKeyInput(inp: dom.html.Input): dom.KeyboardEvent => Unit = { evt =>
+      val key = evt.polyfill()._1
+      def doUpdate() = {
+        evt.stopPropagation()
+        evt.preventDefault()
+        val elem = fromString(inp.value)
+        val layout = newLayout()
+        layout.set(elem)
+        inp.value = ""
+        values.now.append(layout)
+        values.propagate()
+      }
 
-        def doUpdate() = {
-          evt.stopPropagation()
-          evt.preventDefault()
-          val elem = fromString(jsThis.value)
-          val layout = newLayout()
-          layout.set(elem)
-          jsThis.value = ""
-          values.now.append(layout)
-          values.propagate()
-        }
+      if(key == KCode.Comma) doUpdate()
 
-        if(key == KCode.Comma) doUpdate()
+      if(key == KCode.Enter) doUpdate()
 
-        if(key == KCode.Enter) doUpdate()
-
-        if(key == KCode.Backspace && jsThis.value == "" && values.now.nonEmpty) {
-          pop()
-        }
+      if(key == KCode.Backspace && inp.value == "" && values.now.nonEmpty) {
+        pop()
       }
     }
 
-    lazy val input: dom.html.Input = inputTag(
-      `type`:="text",
-      scalatags.JsDom.all.onkeydown := handleKeyInput
-    ).render
+    lazy val input: dom.html.Input = {
+      val result = inputTag(`type`:="text").render
+      val delayed = (evt:dom.KeyboardEvent) => js.timers.setTimeout(0)(handleKeyInput(result)(evt))
+      result.addEventListener[dom.KeyboardEvent]("keydown", handleKeyInput(result))
+      result.addEventListener[dom.KeyboardEvent]("paste",delayed)
+      result.addEventListener[dom.KeyboardEvent]("cut", delayed)
+      result
+    }
   }
 
   //For Set of Things (ie Tag Like)
@@ -125,43 +126,45 @@ trait Input {
 
     override def reset(): Unit = set(Set.empty)
 
-    protected def handleKeyInput: js.ThisFunction1[dom.html.Input, dom.KeyboardEvent,Unit] = {
-      (jsThis: dom.html.Input, evt: dom.KeyboardEvent) => {
+    protected def handleKeyInput(inp: dom.html.Input): dom.KeyboardEvent => Unit = { evt =>
+      val key = evt.polyfill()._1
 
-        val key = evt.polyfill()._1
-
-        def doUpdate(): Unit = {
-          evt.stopPropagation()
-          evt.preventDefault()
-          val elem = fromString(jsThis.value)
-          if(!current.now.toOption.exists(_.contains(elem))) {
-            val layout = newLayout()
-            layout.set(elem)
-            jsThis.value = ""
-            values() = values.now + layout
-          }
+      def doUpdate(): Unit = {
+        evt.stopPropagation()
+        evt.preventDefault()
+        val elem = fromString(inp.value)
+        if(!current.now.toOption.exists(_.contains(elem))) {
+          val layout = newLayout()
+          layout.set(elem)
+          inp.value = ""
+          values() = values.now + layout
         }
+      }
 
-        if(key == KCode.Comma) doUpdate()
+      if(key == KCode.Comma) doUpdate()
 
-        if(key == KCode.Enter) doUpdate()
+      if(key == KCode.Enter) doUpdate()
 
-        if(key == KCode.Backspace && jsThis.value == "" && values.now.nonEmpty) {
-          pop()
-        }
+      if(key == KCode.Backspace && inp.value == "" && values.now.nonEmpty) {
+        pop()
       }
     }
 
-    lazy val input: dom.html.Input = inputTag(
-      `type`:="text",
-      scalatags.JsDom.all.onkeydown := handleKeyInput
-    ).render
+    lazy val input: dom.html.Input = {
+      val result = inputTag(`type`:="text").render
+      val delayed = (evt:dom.KeyboardEvent) => js.timers.setTimeout(0)(handleKeyInput(result)(evt))
+      result.addEventListener[dom.KeyboardEvent]("keydown", handleKeyInput(result))
+      result.addEventListener[dom.KeyboardEvent]("paste", delayed)
+      result.addEventListener[dom.KeyboardEvent]("cut", delayed)
+      result
+    }
+
   }
 
   class Validate[T: StringTryLike]
       (defaultToUninitialized: Boolean)
       (mods: Modifier*)
-      (implicit ctx: Ctx.Owner) extends FormRx[T] {
+      (implicit ctx: Ctx.Owner) extends FormRx[T] with formrx.Procs {
 
     private val strLike = implicitly[StringTryLike[T]]
 
@@ -173,11 +176,14 @@ trait Input {
 
     val current: rx.Rx[Try[T]] = rx.Rx(_current())
 
-    lazy val input: org.scalajs.dom.html.Input = scalatags.JsDom.all.input(
-      `type` := "text",
-      onkeyup := { () => _current() = strLike.from(input.value) },
-      mods
-    ).render
+    lazy val input: org.scalajs.dom.html.Input = {
+      val result = scalatags.JsDom.all.input(`type` := "text", mods).render
+      val delayed = (evt:dom.KeyboardEvent) => js.timers.setTimeout(0)(proc())
+      result.addEventListener[dom.KeyboardEvent]("keyup", (_:dom.Event) => proc())
+      result.addEventListener[dom.KeyboardEvent]("paste", delayed)
+      result.addEventListener[dom.KeyboardEvent]("cut", delayed)
+      result
+    }
 
     override def set(inp: T) = {
       input.value = strLike.to(inp)
@@ -187,6 +193,10 @@ trait Input {
     override def reset(): Unit = {
       input.value = ""
       _current() = defaultValue
+    }
+
+    override def proc(): Unit = {
+      _current() = strLike.from(input.value)
     }
   }
 

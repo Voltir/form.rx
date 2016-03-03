@@ -10,6 +10,6 @@ trait FormRx[Target] {
 }
 
 object FormRx {
-  def apply[T,Layout](implicit ctx: rx.Ctx.Owner): Layout with FormRx[T] = macro Macros.generate[T,Layout]
+  def apply[T,Layout](implicit ctx: rx.Ctx.Owner): Layout with FormRx[T] with Procs = macro Macros.generate[T,Layout]
 }
 

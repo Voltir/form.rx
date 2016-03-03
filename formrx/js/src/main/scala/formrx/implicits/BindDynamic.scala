@@ -14,7 +14,9 @@ trait BindDynamic[T] {
     val bound = inp.asInstanceOf[js.Dynamic].selectDynamic(KEY).asInstanceOf[UndefOr[Var[Try[T]]]]
     bound.getOrElse {
       val result: Var[Try[T]] = Var(make(inp.value))
-      inp.onkeyup = (ev:dom.KeyboardEvent) => result() = make(inp.value)
+      inp.addEventListener("keyup",(evt:dom.KeyboardEvent) => { result() = make(inp.value) })
+      inp.addEventListener("paste",(evt:dom.KeyboardEvent) => js.timers.setTimeout(0){ result() = make(inp.value) })
+      inp.addEventListener("cut",(evt:dom.KeyboardEvent) => js.timers.setTimeout(0){ result() = make(inp.value) })
       inp.asInstanceOf[js.Dynamic].updateDynamic(KEY)(result.asInstanceOf[js.Any])
       result
     }

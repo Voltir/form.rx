@@ -57,7 +57,8 @@ trait Common {
   implicit def implicitFormidableOptionBindRx[Target, F <: FormRx[Target]](implicit ctx: Ctx.Owner): BindRx[F,Option[Target]] = new FormidableOptionBindRx[Target,F]
 
   //This class is for a List of FormRx's for variable sized form parts (ie: List of experience in a Resume form)
-  class RxLayoutList[T, Layout <: FormRx[T]](make: Ctx.Owner => Layout)(implicit ctx: Ctx.Owner) extends FormRx[List[T]] {
+  class RxLayoutList[T, Layout <: FormRx[T] with formrx.Procs](make: Ctx.Owner => Layout)(implicit ctx: Ctx.Owner)
+      extends FormRx[List[T]] with formrx.Procs {
 
     val values: rx.Var[collection.mutable.Buffer[Layout]] = rx.Var(collection.mutable.Buffer.empty)
 
@@ -91,6 +92,10 @@ trait Common {
     def remove(elem: Layout): Unit = {
       values.now -= elem
       values.propagate()
+    }
+
+    override def proc(): Unit = {
+      values.now.foreach(_.proc())
     }
   }
 }

@@ -12,7 +12,7 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def generate[T: c.WeakTypeTag, Layout: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormRx[T]] = {
+  def generate[T: c.WeakTypeTag, Layout: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormRx[T] with Procs] = {
     import c.universe._
     val ownerTpe = weakTypeOf[rx.Ctx.Owner]
     val layoutTpe = weakTypeTag[Layout].tpe
@@ -52,6 +52,13 @@ object Macros {
     val rxVarAccessors = layoutAccessors.filter { a =>
       a.typeSignature match {
         case NullaryMethodType(TypeRef(_,VAR_SYMBOL, _ :: Nil)) => true
+        case _ => false
+      }
+    }
+
+    val procAccessors = layoutAccessors.filter { a =>
+      a.typeSignature match {
+        case NullaryMethodType(tpe) if tpe <:< typeOf[formrx.Procs] => true
         case _ => false
       }
     }
@@ -100,15 +107,24 @@ object Macros {
       if(defaults.nonEmpty) Option(q"rx.Var.set(..$defaults)") else None
     }
 
-    c.Expr[Layout with FormRx[T]](q"""
-      new $layoutTpe()($ctx) with FormRx[$targetTpe] {
-        implicit val ctx: Ctx.Owner = $ctx
+    val procMagic =
+      if(procAccessors.nonEmpty) {
+        val procs = procAccessors.map(p => q"this.$p.proc()")
+        q"override def proc(): Unit = { ..$procs }"
+      } else {
+        q"override def proc(): Unit = ()"
+      }
+
+
+    c.Expr[Layout with FormRx[T] with Procs](q"""
+      new $layoutTpe()($ctx) with formrx.FormRx[$targetTpe] with formrx.Procs {
+        implicit val ctx: rx.Ctx.Owner = $ctx
 
         private var isUpdating: Boolean = false
 
         ..$varDefaultsMagic
 
-        override val current: rx.Rx[scala.util.Try[$targetTpe]] = Rx {
+        override val current: rx.Rx[scala.util.Try[$targetTpe]] = rx.Rx {
           if(isUpdating) {
             scala.util.Failure(formrx.FormidableProcessingFailure)
           } else {
@@ -132,6 +148,8 @@ object Macros {
           isUpdating = false
           current.recalc()
         }
+
+        $procMagic
       }
     """)
   }
