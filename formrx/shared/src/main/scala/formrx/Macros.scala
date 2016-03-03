@@ -114,7 +114,7 @@ object Macros {
       } else {
         q"override def proc(): Unit = ()"
       }
-    
+
     c.Expr[Layout with FormRx[T] with FormProcs[T]](q"""
       new $layoutTpe()($ctx) with formrx.FormRx[$targetTpe] with formrx.FormProcs[$targetTpe] {
         implicit val ctx: rx.Ctx.Owner = $ctx

@@ -1,6 +1,6 @@
 
 val formrx = crossProject.settings(
-  version := "1.1.1-SNAPSHOT",
+  version := "1.1.1",
   name := "formrx",
   scalaVersion := "2.11.7",
   organization := "com.stabletechs",
