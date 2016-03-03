@@ -14,7 +14,7 @@ val formrx = crossProject.settings(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ),
   scmInfo := Some(ScmInfo(
-    url("https://github.com/Voltir/form,rx"),
+    url("https://github.com/Voltir/form.rx"),
     "scm:git:git@github.com/Voltir/form.rx.git",
     Some("scm:git:git@github.com/Voltir/form.rx.git"))
   ),
