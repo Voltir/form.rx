@@ -12,7 +12,7 @@ object Macros {
     c.universe.internal.gen.mkAttributedRef(pre, tpe.typeSymbol.companion)
   }
 
-  def generate[T: c.WeakTypeTag, Layout: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormRx[T] with Procs] = {
+  def generate[T: c.WeakTypeTag, Layout: c.WeakTypeTag](c: blackbox.Context)(ctx: c.Expr[rx.Ctx.Owner]): c.Expr[Layout with FormRx[T] with FormProcs[T]] = {
     import c.universe._
     val ownerTpe = weakTypeOf[rx.Ctx.Owner]
     val layoutTpe = weakTypeTag[Layout].tpe
@@ -114,10 +114,9 @@ object Macros {
       } else {
         q"override def proc(): Unit = ()"
       }
-
-
-    c.Expr[Layout with FormRx[T] with Procs](q"""
-      new $layoutTpe()($ctx) with formrx.FormRx[$targetTpe] with formrx.Procs {
+    
+    c.Expr[Layout with FormRx[T] with FormProcs[T]](q"""
+      new $layoutTpe()($ctx) with formrx.FormRx[$targetTpe] with formrx.FormProcs[$targetTpe] {
         implicit val ctx: rx.Ctx.Owner = $ctx
 
         private var isUpdating: Boolean = false

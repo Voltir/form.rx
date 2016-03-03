@@ -7,4 +7,8 @@ package object formrx {
   trait Procs {
     def proc(): Unit
   }
+
+  trait FormProcs[T] extends Procs { self: FormRx[T] =>
+    def getOrProc(f: T => Unit): Unit = self.current.now.toOption.fold(proc())(f)
+  }
 }
