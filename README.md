@@ -124,7 +124,6 @@ val nestedForm = FormRx[Nested,NestedLayout]
 ...
 form(
   nestedForm.top,
-  nestedForm.uid,
   label("Inner:"),
   nestedForm.inner.foo,
   nestedForm.inner.bar.select,
