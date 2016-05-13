@@ -110,9 +110,9 @@ object Macros {
     val procMagic =
       if(procAccessors.nonEmpty) {
         val procs = procAccessors.map(p => q"this.$p.proc()")
-        q"override def proc(): Unit = { ..$procs }"
+        q"override def proc(): Unit = { current.recalc() ; ..$procs }"
       } else {
-        q"override def proc(): Unit = ()"
+        q"override def proc(): Unit = { current.recalc() ; () }"
       }
 
     c.Expr[Layout with FormRx[T] with FormProcs[T]](q"""

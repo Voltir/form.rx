@@ -1,15 +1,15 @@
 
 val formrx = crossProject.settings(
-  version := "1.1.1",
+  version := "1.1.2",
   name := "formrx",
-  scalaVersion := "2.11.7",
+  scalaVersion := "2.11.8",
   organization := "com.stabletechs",
   testFrameworks += new TestFramework("utest.runner.Framework"),
   addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.3"),
   libraryDependencies ++= Seq(
-    "com.stabletechs" %%% "likelib" % "0.1.1",
+    "com.stabletechs" %%% "likelib" % "0.1.2",
     "com.lihaoyi" %%% "scalarx" % "0.3.1",
-    "com.lihaoyi" %%% "scalatags" % "0.5.4",
+    "com.lihaoyi" %%% "scalatags" % "0.5.5",
     "com.lihaoyi" %%% "utest" % "0.3.1" % "test",
     "org.scala-lang" % "scala-reflect" % scalaVersion.value
   ),
